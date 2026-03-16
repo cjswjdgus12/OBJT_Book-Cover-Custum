@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import { Ruler, Layers, Check, Download } from 'lucide-react';
+import html2canvas from 'html2canvas';
 
 // 파스텔 톤 색상 적용
 const COVER_COLORS = {
@@ -21,12 +22,6 @@ const SIZES: Record<string, { name: string; realText: string; width: number; hei
   b6: { name: 'B6', realText: '285 X 195mm', width: 257, height: 351 },
   a6: { name: 'A6', realText: '230 X 155mm', width: 207, height: 279 }
 };
-
-declare global {
-  interface Window {
-    html2canvas: any;
-  }
-}
 
 export default function App() {
   const [size, setSize] = useState('b6');
@@ -54,20 +49,10 @@ export default function App() {
   const handleDownloadImage = async () => {
     setIsDownloading(true);
     try {
-      if (!window.html2canvas) {
-        await new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.src = 'https://html2canvas.hertzen.com/dist/html2canvas.min.js';
-          script.onload = resolve;
-          script.onerror = reject;
-          document.head.appendChild(script);
-        });
-      }
-
       // 화면에 보이는 영역 대신, 항상 일정한 비율을 유지하는 '숨겨진 전용 영역'을 캡처합니다.
       const element = document.getElementById('export-capture-area');
       if (element) {
-        const canvas = await window.html2canvas(element, {
+        const canvas = await html2canvas(element, {
           scale: 2, // 고해상도
           useCORS: true,
           backgroundColor: '#e5e7eb'
@@ -257,7 +242,7 @@ export default function App() {
         이미지 다운로드 전용 캡처 영역 (사용자 눈에는 보이지 않음)
         패널이 열려있든 닫혀있든 상관없이 무조건 '0.95 비율(확대된 상태)'로 고정되어 예쁘게 저장됩니다.
       */}
-      <div className="absolute top-0 left-[-9999px] pointer-events-none">
+      <div className="fixed top-0 left-[-9999px] pointer-events-none z-[-1]">
         <div 
           id="export-capture-area" 
           className="w-[420px] h-[600px] bg-[#e5e7eb] relative flex flex-col items-center justify-center overflow-hidden font-sans"
