@@ -16,16 +16,16 @@ const DIARY_TYPES: Record<string, { name: string; hex: string; imageUrl: string;
   sparkleSky: { 
     name: '스파클 - 하늘', 
     hex: '#B5CBE8', // 사진과 유사한 톤다운된 하늘색
-    imageUrl: SPARKLE_SVG,
-    bgSize: '120px 120px',
-    bgSizeSmall: '50px 50px'
+    imageUrl: 'https://i.ibb.co/WCjzp5w/image.png',
+    bgSize: 'cover',
+    bgSizeSmall: 'cover'
   },
   sparklePink: { 
     name: '스파클 - 분홍', 
     hex: '#EBBBD0', // 사진과 유사한 차분한 핑크색
-    imageUrl: SPARKLE_SVG,
-    bgSize: '120px 120px',
-    bgSizeSmall: '50px 50px'
+    imageUrl: 'https://i.ibb.co/G4tWW9jp/image.png',
+    bgSize: 'cover',
+    bgSizeSmall: 'cover'
   },
   blim: { 
     name: '블림', 
@@ -56,8 +56,8 @@ export default function App() {
   // 이미지 다운로드 진행 상태를 관리하는 State
   const [isDownloading, setIsDownloading] = useState(false);
 
-  // 화면에 보이는 용도 (패널 상태와 무관하게 고정하여 꿀렁임 방지)
-  const scale = 0.8; 
+  // 화면에 보이는 용도 (패널이 열려있을 때는 작게, 닫혀있을 때는 크게)
+  const scale = isPanelOpen ? 0.55 : 0.8; 
   
   const rawWidth = size === 'custom' ? ((Number(customWidth) || 200) / 2) * 1.8 : SIZES[size].width;
   const rawHeight = size === 'custom' ? (Number(customHeight) || 150) * 1.8 : SIZES[size].height;
@@ -120,7 +120,7 @@ export default function App() {
              style={{ backgroundImage: 'radial-gradient(#9ca3af 1px, transparent 1px)', backgroundSize: '16px 16px' }}></div>
 
         <div 
-          className="relative transition-all duration-500 ease-in-out flex items-center justify-center z-10"
+          className="relative transition-all duration-500 ease-in-out flex items-center justify-center z-10 shrink-0"
           style={{
             width: `${currentWidth}px`,
             height: `${currentHeight}px`,
@@ -153,7 +153,8 @@ export default function App() {
                 alignItems: 'center',
                 justifyContent: 'flex-start',
                 paddingLeft: `${16 * scale}px`,
-                zIndex: 10
+                zIndex: 10,
+                transition: 'all 0.5s ease-in-out'
               }}
             >
               {/* 금속 버튼 */}
@@ -163,7 +164,8 @@ export default function App() {
                   height: `${24 * scale}px`,
                   borderRadius: '50%',
                   background: 'linear-gradient(135deg, #E0E0E0 0%, #9E9E9E 100%)', // 실버
-                  boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.4), 0 2px 4px rgba(0,0,0,0.3)'
+                  boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.4), 0 2px 4px rgba(0,0,0,0.3)',
+                  transition: 'all 0.5s ease-in-out'
                 }}
               ></div>
             </div>
@@ -182,7 +184,8 @@ export default function App() {
                   width: `${12 * scale}px`,
                   backgroundColor: 'rgba(255, 255, 255, 0.4)',
                   boxShadow: 'inset 2px 0 4px rgba(0,0,0,0.05), inset -2px 0 4px rgba(0,0,0,0.05), 2px 0 4px rgba(0,0,0,0.1), -2px 0 4px rgba(0,0,0,0.1)',
-                  zIndex: 5
+                  zIndex: 5,
+                  transition: 'all 0.5s ease-in-out'
                 }}
               />
               {/* 하단 흰색 타원형 태그 */}
@@ -201,12 +204,13 @@ export default function App() {
                   justifyContent: 'space-between',
                   padding: `0 ${6 * scale}px`,
                   zIndex: 6,
-                  transform: 'rotate(0deg)'
+                  transform: 'rotate(0deg)',
+                  transition: 'all 0.5s ease-in-out'
                 }}
               >
-                <div style={{ width: `${2 * scale}px`, height: `${2 * scale}px`, borderRadius: '50%', backgroundColor: '#9ca3af', boxShadow: 'inset 0.5px 0.5px 1px rgba(0,0,0,0.3)' }} />
-                <span style={{ fontSize: `${7 * scale}px`, color: '#888', fontWeight: 'bold', letterSpacing: '1px', fontFamily: 'sans-serif' }}>OBJINT</span>
-                <div style={{ width: `${2 * scale}px`, height: `${2 * scale}px`, borderRadius: '50%', backgroundColor: '#9ca3af', boxShadow: 'inset 0.5px 0.5px 1px rgba(0,0,0,0.3)' }} />
+                <div style={{ width: `${2 * scale}px`, height: `${2 * scale}px`, borderRadius: '50%', backgroundColor: '#9ca3af', boxShadow: 'inset 0.5px 0.5px 1px rgba(0,0,0,0.3)', transition: 'all 0.5s ease-in-out' }} />
+                <span style={{ fontSize: `${7 * scale}px`, color: '#888', fontWeight: 'bold', letterSpacing: '1px', fontFamily: 'sans-serif', transition: 'all 0.5s ease-in-out' }}>OBJINT</span>
+                <div style={{ width: `${2 * scale}px`, height: `${2 * scale}px`, borderRadius: '50%', backgroundColor: '#9ca3af', boxShadow: 'inset 0.5px 0.5px 1px rgba(0,0,0,0.3)', transition: 'all 0.5s ease-in-out' }} />
               </div>
             </>
           )}
@@ -364,6 +368,13 @@ export default function App() {
           id="export-capture-area" 
           className="w-[420px] h-[600px] bg-[#e5e7eb] relative flex flex-col items-center justify-center overflow-hidden font-sans"
         >
+          {/* 워터마크 (저장된 이미지 좌측 상단) */}
+          <div className="absolute top-6 left-6 z-20 pointer-events-none">
+            <h1 className="text-xl font-bold text-gray-900 tracking-tighter drop-shadow-sm bg-white/50 px-3 py-1 rounded-full backdrop-blur-md">
+              OBJT
+            </h1>
+          </div>
+
           <div className="absolute inset-0 opacity-20 pointer-events-none" 
                style={{ backgroundImage: 'radial-gradient(#9ca3af 1px, transparent 1px)', backgroundSize: '16px 16px' }}></div>
           <div 
