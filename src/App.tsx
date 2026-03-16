@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { Ruler, Layers, Check, Download } from 'lucide-react';
-import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
 
 // 파스텔 톤 색상 적용
 const COVER_COLORS = {
@@ -52,22 +52,31 @@ export default function App() {
       // 화면에 보이는 영역 대신, 항상 일정한 비율을 유지하는 '숨겨진 전용 영역'을 캡처합니다.
       const element = document.getElementById('export-capture-area');
       if (element) {
-        const canvas = await html2canvas(element, {
-          scale: 2, // 고해상도
-          useCORS: true,
-          backgroundColor: '#e5e7eb'
+        const dataUrl = await toPng(element, {
+          cacheBust: true,
+          pixelRatio: 2, // 고해상도
+          backgroundColor: '#e5e7eb',
+          style: {
+            // 캡처 시 화면 밖으로 밀어낸 위치(left: -9999px)를 초기화하여 정상적으로 그려지게 함
+            transform: 'none',
+            left: '0',
+            top: '0',
+            position: 'relative',
+          }
         });
 
         const fileName = `OBJT_북커버_${SIZES[size]?.name || '커스텀'}_${COVER_COLORS[coverColor].name}.png`;
 
         const link = document.createElement('a');
         link.download = fileName;
-        link.href = canvas.toDataURL('image/png');
+        link.href = dataUrl;
         link.click();
+      } else {
+        alert('캡처할 영역을 찾을 수 없습니다.');
       }
     } catch (error) {
       console.error('이미지 저장 중 오류 발생:', error);
-      alert('이미지를 저장하는 데 실패했습니다. 잠시 후 다시 시도해 주세요.');
+      alert(`이미지 저장 실패: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsDownloading(false);
     }
@@ -242,7 +251,7 @@ export default function App() {
         이미지 다운로드 전용 캡처 영역 (사용자 눈에는 보이지 않음)
         패널이 열려있든 닫혀있든 상관없이 무조건 '0.95 비율(확대된 상태)'로 고정되어 예쁘게 저장됩니다.
       */}
-      <div className="fixed top-0 left-[-9999px] pointer-events-none z-[-1]">
+      <div className="absolute top-0 left-[-9999px] pointer-events-none z-[-1]">
         <div 
           id="export-capture-area" 
           className="w-[420px] h-[600px] bg-[#e5e7eb] relative flex flex-col items-center justify-center overflow-hidden font-sans"
