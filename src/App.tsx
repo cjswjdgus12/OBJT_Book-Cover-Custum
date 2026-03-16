@@ -73,6 +73,13 @@ export default function App() {
       // 화면에 보이는 영역 대신, 항상 일정한 비율을 유지하는 '숨겨진 전용 영역'을 캡처합니다.
       const element = document.getElementById('export-capture-area');
       if (element) {
+        // iOS Safari 버그 방지를 위해 두 번 캡처 (첫 번째는 버림)
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        
+        if (isIOS) {
+          await toPng(element, { cacheBust: true, pixelRatio: 1, backgroundColor: '#e5e7eb', style: { transform: 'none', left: '0', top: '0', position: 'relative' } }).catch(() => {});
+        }
+
         const dataUrl = await toPng(element, {
           cacheBust: true,
           pixelRatio: 2, // 고해상도
@@ -88,10 +95,50 @@ export default function App() {
 
         const fileName = `OBJT_북커버_${SIZES[size]?.name || '직접입력'}_${DIARY_TYPES[diaryType].name}.png`;
 
-        const link = document.createElement('a');
-        link.download = fileName;
-        link.href = dataUrl;
-        link.click();
+        if (isIOS) {
+          try {
+            // iOS는 a 태그 download 속성이 잘 작동하지 않으므로 Web Share API 사용
+            const response = await fetch(dataUrl);
+            const blob = await response.blob();
+            const file = new File([blob], fileName, { type: 'image/png' });
+
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+              await navigator.share({
+                files: [file],
+                title: 'OBJT 북커버',
+              });
+            } else {
+              // Share API 지원 안 할 경우 새 창 띄우기 (길게 눌러 저장 유도)
+              const newWindow = window.open();
+              if (newWindow) {
+                newWindow.document.write(`
+                  <html>
+                    <head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+                    <body style="margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#f3f4f6; height:100vh;">
+                      <p style="font-family:sans-serif; color:#374151; margin-bottom:16px; font-weight:bold;">이미지를 길게 눌러 '사진 앱에 저장'을 선택해주세요.</p>
+                      <img src="${dataUrl}" style="max-width:90%; max-height:80vh; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.1);" />
+                    </body>
+                  </html>
+                `);
+                newWindow.document.close();
+              } else {
+                alert('팝업 차단을 해제해주세요.');
+              }
+            }
+          } catch (shareError) {
+            // 사용자가 공유를 취소한 경우는 에러 무시
+            if ((shareError as Error).name !== 'AbortError') {
+              console.error('공유 실패:', shareError);
+              alert('이미지 저장에 실패했습니다. 다시 시도해주세요.');
+            }
+          }
+        } else {
+          // 안드로이드 및 PC (기존 방식)
+          const link = document.createElement('a');
+          link.download = fileName;
+          link.href = dataUrl;
+          link.click();
+        }
       } else {
         alert('캡처할 영역을 찾을 수 없습니다.');
       }
