@@ -7,12 +7,27 @@ import React, { useState } from 'react';
 import { Ruler, Layers, Check, Download } from 'lucide-react';
 import { toPng } from 'html-to-image';
 
-// 파스텔 톤 색상 적용
-const COVER_COLORS = {
-  white: { name: '하양', hex: '#FFFFFF' }, // 진짜 하얀색으로 변경
-  pink: { name: '분홍', hex: '#FFD1DC' }, // 파스텔 핑크
-  skyblue: { name: '하늘', hex: '#B5D8EB' }, // 파스텔 스카이블루
-  yellow: { name: '노랑', hex: '#FFF59D' } // 파스텔 옐로우
+// 사진과 동일한 느낌을 내는 SVG 패턴 생성
+const SPARKLE_SVG = "data:image/svg+xml,%3Csvg width='80' height='80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='rgba(255,255,255,0.4)'%3E%3Crect x='0' y='0' width='2' height='80'/%3E%3Crect x='8' y='0' width='2' height='80'/%3E%3Crect x='16' y='0' width='2' height='80'/%3E%3Crect x='24' y='0' width='2' height='80'/%3E%3Crect x='32' y='0' width='2' height='80'/%3E%3Crect x='40' y='0' width='2' height='80'/%3E%3Crect x='48' y='0' width='2' height='80'/%3E%3Crect x='56' y='0' width='2' height='80'/%3E%3Crect x='64' y='0' width='2' height='80'/%3E%3Crect x='72' y='0' width='2' height='80'/%3E%3C/g%3E%3Cg fill='%23F8FAFC' stroke='%23CBD5E1' stroke-width='0.5'%3E%3Cpath d='M 10 0 Q 10 10 20 10 Q 10 10 10 20 Q 10 10 0 10 Q 10 10 10 0 Z' transform='translate(10, 10) scale(0.4)'/%3E%3Cpath d='M 10 0 Q 10 10 20 10 Q 10 10 10 20 Q 10 10 0 10 Q 10 10 10 0 Z' transform='translate(50, 40) scale(0.5)'/%3E%3Cpath d='M 10 0 Q 10 10 20 10 Q 10 10 10 20 Q 10 10 0 10 Q 10 10 10 0 Z' transform='translate(25, 60) scale(0.3)'/%3E%3Cpath d='M 10 0 Q 10 10 20 10 Q 10 10 10 20 Q 10 10 0 10 Q 10 10 10 0 Z' transform='translate(65, 5) scale(0.35)'/%3E%3C/g%3E%3C/svg%3E";
+const BLIM_SVG = "data:image/svg+xml,%3Csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='rgba(0,0,0,0.03)'%3E%3Crect x='0' y='0' width='2' height='20'/%3E%3Crect x='0' y='0' width='20' height='2'/%3E%3C/g%3E%3C/svg%3E";
+
+// 다이어리 종류 적용 (실제 이미지 URL 추가)
+const DIARY_TYPES = {
+  sparkleSky: { 
+    name: '스파클 - 하늘', 
+    hex: '#AECBEB', // 사진과 유사한 약간 톤다운된 하늘색
+    imageUrl: SPARKLE_SVG
+  },
+  sparklePink: { 
+    name: '스파클 - 분홍', 
+    hex: '#F4C8D4', // 사진과 유사한 차분한 핑크색
+    imageUrl: SPARKLE_SVG
+  },
+  blim: { 
+    name: '블림', 
+    hex: '#F8F9FA', // 깔끔한 오프화이트
+    imageUrl: BLIM_SVG
+  }
 };
 
 const SIZES: Record<string, { name: string; realText: string; width: number; height: number }> = {
@@ -27,7 +42,7 @@ export default function App() {
   const [size, setSize] = useState('b6');
   const [customWidth, setCustomWidth] = useState<number | ''>(250);
   const [customHeight, setCustomHeight] = useState<number | ''>(180);
-  const [coverColor, setCoverColor] = useState<keyof typeof COVER_COLORS>('white');
+  const [diaryType, setDiaryType] = useState<keyof typeof DIARY_TYPES>('sparkleSky');
   
   // 패널의 열림/닫힘 상태를 관리하는 State
   const [isPanelOpen, setIsPanelOpen] = useState(true);
@@ -43,7 +58,7 @@ export default function App() {
   
   const currentWidth = rawWidth * scale;
   const currentHeight = rawHeight * scale;
-  const currentRealText = size === 'custom' ? `${customWidth || 0} X ${customHeight || 0}mm` : SIZES[size].realText;
+  const currentRealText = size === 'custom' ? `직접 입력 (${customWidth || 0} X ${customHeight || 0}mm)` : `${SIZES[size].name} (${SIZES[size].realText})`;
 
   // 미리보기 영역 캡처 및 이미지 다운로드 함수
   const handleDownloadImage = async () => {
@@ -65,7 +80,7 @@ export default function App() {
           }
         });
 
-        const fileName = `OBJT_북커버_${SIZES[size]?.name || '커스텀'}_${COVER_COLORS[coverColor].name}.png`;
+        const fileName = `OBJT_북커버_${SIZES[size]?.name || '직접입력'}_${DIARY_TYPES[diaryType].name}.png`;
 
         const link = document.createElement('a');
         link.download = fileName;
@@ -103,14 +118,51 @@ export default function App() {
           style={{
             width: `${currentWidth}px`,
             height: `${currentHeight}px`,
-            backgroundColor: COVER_COLORS[coverColor].hex,
+            backgroundColor: DIARY_TYPES[diaryType].hex,
+            backgroundImage: `url("${DIARY_TYPES[diaryType].imageUrl}")`,
+            backgroundRepeat: 'repeat',
+            backgroundSize: '80px 80px',
             borderRadius: '3px 12px 12px 3px',
-            border: '1px solid rgba(0,0,0,0.08)'
+            border: '1px solid rgba(0,0,0,0.08)',
+            boxShadow: 'inset 6px 0 12px rgba(0,0,0,0.15)' // 책등(Spine) 느낌을 주는 그림자 추가
           }}
-        ></div>
+        >
+          {/* 똑딱이 스트랩 */}
+          <div 
+            style={{
+              position: 'absolute',
+              right: -1,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: `${35 * scale}px`,
+              height: `${25 * scale}px`,
+              backgroundColor: '#FDFBF7',
+              border: '1px solid rgba(0,0,0,0.1)',
+              borderRight: 'none',
+              borderRadius: `${6 * scale}px 0 0 ${6 * scale}px`,
+              boxShadow: '-2px 2px 6px rgba(0,0,0,0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-start',
+              paddingLeft: `${6 * scale}px`,
+              zIndex: 10
+            }}
+          >
+            {/* 금속 버튼 */}
+            <div 
+              style={{
+                width: `${10 * scale}px`,
+                height: `${10 * scale}px`,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #E2C285 0%, #B8860B 100%)',
+                boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.6), 0 1px 3px rgba(0,0,0,0.3)'
+              }}
+            ></div>
+          </div>
+        </div>
 
         <div className="absolute bottom-6 bg-black/60 backdrop-blur-sm text-white text-[11px] px-3 py-1.5 rounded-full z-10 tracking-wide font-medium">
-          {currentRealText} • {COVER_COLORS[coverColor].name}
+          {currentRealText} • {DIARY_TYPES[diaryType].name}
         </div>
       </div>
 
@@ -196,26 +248,31 @@ export default function App() {
           <section className="space-y-4">
             <div className="flex items-center gap-2 text-gray-800 font-bold mb-3">
               <Layers className="w-5 h-5 text-gray-400" />
-              <h3 className="text-lg">원단 색상</h3>
+              <h3 className="text-lg">다이어리 선택</h3>
             </div>
             
             <div className="grid grid-cols-2 gap-3">
-              {Object.entries(COVER_COLORS).map(([key, val]) => (
+              {Object.entries(DIARY_TYPES).map(([key, val]) => (
                 <button
                   key={key}
-                  onClick={() => setCoverColor(key as keyof typeof COVER_COLORS)}
+                  onClick={() => setDiaryType(key as keyof typeof DIARY_TYPES)}
                   className={`p-4 rounded-2xl border text-center transition-all flex flex-col items-center gap-3
-                    ${coverColor === key 
+                    ${diaryType === key 
                       ? 'border-blue-600 bg-blue-50 text-blue-800 ring-1 ring-blue-600 shadow-sm' 
                       : 'border-gray-200 hover:bg-gray-50 text-gray-600'}`}
                 >
                   <div 
                     className="w-14 h-14 rounded-full border border-gray-200 shadow-sm"
-                    style={{ backgroundColor: val.hex }}
+                    style={{ 
+                      backgroundColor: val.hex,
+                      backgroundImage: `url("${val.imageUrl}")`,
+                      backgroundRepeat: 'repeat',
+                      backgroundSize: '50px 50px'
+                    }}
                   ></div>
                   <span className="font-bold text-[13px] flex items-center gap-1">
                     {val.name}
-                    {coverColor === key && <Check className="w-3.5 h-3.5 text-blue-600" />}
+                    {diaryType === key && <Check className="w-3.5 h-3.5 text-blue-600" />}
                   </span>
                 </button>
               ))}
@@ -263,13 +320,50 @@ export default function App() {
             style={{
               width: `${rawWidth * 0.95}px`, // 무조건 0.95 확대 비율 적용
               height: `${rawHeight * 0.95}px`,
-              backgroundColor: COVER_COLORS[coverColor].hex,
+              backgroundColor: DIARY_TYPES[diaryType].hex,
+              backgroundImage: `url("${DIARY_TYPES[diaryType].imageUrl}")`,
+              backgroundRepeat: 'repeat',
+              backgroundSize: '80px 80px',
               borderRadius: '3px 12px 12px 3px',
-              border: '1px solid rgba(0,0,0,0.08)' 
+              border: '1px solid rgba(0,0,0,0.08)',
+              boxShadow: 'inset 6px 0 12px rgba(0,0,0,0.15)'
             }}
-          ></div>
+          >
+            {/* 똑딱이 스트랩 (다운로드용) */}
+            <div 
+              style={{
+                position: 'absolute',
+                right: -1,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: `${35 * 0.95}px`,
+                height: `${25 * 0.95}px`,
+                backgroundColor: '#FDFBF7',
+                border: '1px solid rgba(0,0,0,0.1)',
+                borderRight: 'none',
+                borderRadius: `${6 * 0.95}px 0 0 ${6 * 0.95}px`,
+                boxShadow: '-2px 2px 6px rgba(0,0,0,0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+                paddingLeft: `${6 * 0.95}px`,
+                zIndex: 10
+              }}
+            >
+              {/* 금속 버튼 */}
+              <div 
+                style={{
+                  width: `${10 * 0.95}px`,
+                  height: `${10 * 0.95}px`,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #E2C285 0%, #B8860B 100%)',
+                  boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.6), 0 1px 3px rgba(0,0,0,0.3)'
+                }}
+              ></div>
+            </div>
+          </div>
           <div className="absolute bottom-10 bg-black/60 backdrop-blur-md text-white text-[13px] px-4 py-2 rounded-full z-10 tracking-wide font-medium">
-            {currentRealText} • {COVER_COLORS[coverColor].name}
+            {currentRealText} • {DIARY_TYPES[diaryType].name}
           </div>
         </div>
       </div>
