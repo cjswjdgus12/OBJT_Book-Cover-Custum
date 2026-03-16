@@ -7,26 +7,32 @@ import React, { useState } from 'react';
 import { Ruler, Layers, Check, Download } from 'lucide-react';
 import { toPng } from 'html-to-image';
 
-// 사진과 동일한 느낌을 내는 SVG 패턴 생성
-const SPARKLE_SVG = "data:image/svg+xml,%3Csvg width='80' height='80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='rgba(255,255,255,0.4)'%3E%3Crect x='0' y='0' width='2' height='80'/%3E%3Crect x='8' y='0' width='2' height='80'/%3E%3Crect x='16' y='0' width='2' height='80'/%3E%3Crect x='24' y='0' width='2' height='80'/%3E%3Crect x='32' y='0' width='2' height='80'/%3E%3Crect x='40' y='0' width='2' height='80'/%3E%3Crect x='48' y='0' width='2' height='80'/%3E%3Crect x='56' y='0' width='2' height='80'/%3E%3Crect x='64' y='0' width='2' height='80'/%3E%3Crect x='72' y='0' width='2' height='80'/%3E%3C/g%3E%3Cg fill='%23F8FAFC' stroke='%23CBD5E1' stroke-width='0.5'%3E%3Cpath d='M 10 0 Q 10 10 20 10 Q 10 10 10 20 Q 10 10 0 10 Q 10 10 10 0 Z' transform='translate(10, 10) scale(0.4)'/%3E%3Cpath d='M 10 0 Q 10 10 20 10 Q 10 10 10 20 Q 10 10 0 10 Q 10 10 10 0 Z' transform='translate(50, 40) scale(0.5)'/%3E%3Cpath d='M 10 0 Q 10 10 20 10 Q 10 10 10 20 Q 10 10 0 10 Q 10 10 10 0 Z' transform='translate(25, 60) scale(0.3)'/%3E%3Cpath d='M 10 0 Q 10 10 20 10 Q 10 10 10 20 Q 10 10 0 10 Q 10 10 10 0 Z' transform='translate(65, 5) scale(0.35)'/%3E%3C/g%3E%3C/svg%3E";
-const BLIM_SVG = "data:image/svg+xml,%3Csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='rgba(0,0,0,0.03)'%3E%3Crect x='0' y='0' width='2' height='20'/%3E%3Crect x='0' y='0' width='20' height='2'/%3E%3C/g%3E%3C/svg%3E";
+// 사진과 동일한 느낌을 내는 SVG 패턴 생성 (세로줄만 남김)
+const SPARKLE_SVG = "data:image/svg+xml,%3Csvg width='120' height='120' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='stripes' width='3' height='3' patternUnits='userSpaceOnUse'%3E%3Crect width='1' height='3' fill='rgba(255,255,255,0.25)'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23stripes)'/%3E%3C/svg%3E";
+const BLIM_SVG = "data:image/svg+xml,%3Csvg width='150' height='150' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='crinkle' width='4' height='24' patternUnits='userSpaceOnUse' patternTransform='rotate(2)'%3E%3Cpath d='M 0 0 Q 1 12 0 24' stroke='rgba(255,255,255,0.8)' stroke-width='1' fill='none'/%3E%3Cpath d='M 1.5 0 Q 0.5 12 1.5 24' stroke='rgba(0,0,0,0.05)' stroke-width='0.5' fill='none'/%3E%3Cpath d='M 2.5 0 Q 3.5 12 2.5 24' stroke='rgba(255,255,255,0.5)' stroke-width='0.5' fill='none'/%3E%3C/pattern%3E%3Cfilter id='stitch'%3E%3CfeDropShadow dx='0.5' dy='1' stdDeviation='0.5' flood-color='rgba(0,0,0,0.15)'/%3E%3C/filter%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23crinkle)'/%3E%3Cg fill='none' filter='url(%23stitch)' stroke='rgba(255,255,255,1)' stroke-width='2' stroke-dasharray='2.5 2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M 40 20 L 48 40 L 70 40 L 52 55 L 60 75 L 40 62 L 20 75 L 28 55 L 10 40 L 32 40 Z' transform='rotate(15 40 47)'/%3E%3Cpath d='M 110 90 L 118 110 L 140 110 L 122 125 L 130 145 L 110 132 L 90 145 L 98 125 L 80 110 L 102 110 Z' transform='rotate(-10 110 117)'/%3E%3Cpath d='M 130 -10 L 138 10 L 160 10 L 142 25 L 150 45 L 130 32 L 110 45 L 118 25 L 100 10 L 122 10 Z' transform='rotate(25 130 17)'/%3E%3Cpath d='M -10 100 L -2 120 L 20 120 L 2 135 L 10 155 L -10 142 L -30 155 L -22 135 L -40 120 L -18 120 Z' transform='rotate(-20 -10 127)'/%3E%3C/g%3E%3C/svg%3E";
 
 // 다이어리 종류 적용 (실제 이미지 URL 추가)
-const DIARY_TYPES = {
+const DIARY_TYPES: Record<string, { name: string; hex: string; imageUrl: string; bgSize: string; bgSizeSmall: string }> = {
   sparkleSky: { 
     name: '스파클 - 하늘', 
-    hex: '#AECBEB', // 사진과 유사한 약간 톤다운된 하늘색
-    imageUrl: SPARKLE_SVG
+    hex: '#B5CBE8', // 사진과 유사한 톤다운된 하늘색
+    imageUrl: SPARKLE_SVG,
+    bgSize: '120px 120px',
+    bgSizeSmall: '50px 50px'
   },
   sparklePink: { 
     name: '스파클 - 분홍', 
-    hex: '#F4C8D4', // 사진과 유사한 차분한 핑크색
-    imageUrl: SPARKLE_SVG
+    hex: '#EBBBD0', // 사진과 유사한 차분한 핑크색
+    imageUrl: SPARKLE_SVG,
+    bgSize: '120px 120px',
+    bgSizeSmall: '50px 50px'
   },
   blim: { 
     name: '블림', 
-    hex: '#F8F9FA', // 깔끔한 오프화이트
-    imageUrl: BLIM_SVG
+    hex: '#DCE5F0', // 사진과 동일한 아주 창백하고 은은한 얼음빛 하늘색
+    imageUrl: 'https://i.ibb.co/n8NxHzQ8/2026-03-16-220208.png',
+    bgSize: 'cover',
+    bgSizeSmall: 'cover'
   }
 };
 
@@ -50,8 +56,8 @@ export default function App() {
   // 이미지 다운로드 진행 상태를 관리하는 State
   const [isDownloading, setIsDownloading] = useState(false);
 
-  // 화면에 보이는 용도 (패널 상태에 따라 크기 조절)
-  const scale = isPanelOpen ? 0.7 : 0.95; 
+  // 화면에 보이는 용도 (패널 상태와 무관하게 고정하여 꿀렁임 방지)
+  const scale = 0.8; 
   
   const rawWidth = size === 'custom' ? ((Number(customWidth) || 200) / 2) * 1.8 : SIZES[size].width;
   const rawHeight = size === 'custom' ? (Number(customHeight) || 150) * 1.8 : SIZES[size].height;
@@ -121,44 +127,89 @@ export default function App() {
             backgroundColor: DIARY_TYPES[diaryType].hex,
             backgroundImage: `url("${DIARY_TYPES[diaryType].imageUrl}")`,
             backgroundRepeat: 'repeat',
-            backgroundSize: '80px 80px',
+            backgroundSize: DIARY_TYPES[diaryType].bgSize,
             borderRadius: '3px 12px 12px 3px',
             border: '1px solid rgba(0,0,0,0.08)',
-            boxShadow: 'inset 6px 0 12px rgba(0,0,0,0.15)' // 책등(Spine) 느낌을 주는 그림자 추가
+            borderRight: 'none', // 우측 흰색 속지 느낌 제거
+            boxShadow: 'inset 6px 0 12px rgba(0,0,0,0.15), 2px 2px 8px rgba(0,0,0,0.05)' // 책등 그림자 및 전체 그림자
           }}
         >
-          {/* 똑딱이 스트랩 */}
-          <div 
-            style={{
-              position: 'absolute',
-              right: -1,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              width: `${35 * scale}px`,
-              height: `${25 * scale}px`,
-              backgroundColor: '#FDFBF7',
-              border: '1px solid rgba(0,0,0,0.1)',
-              borderRight: 'none',
-              borderRadius: `${6 * scale}px 0 0 ${6 * scale}px`,
-              boxShadow: '-2px 2px 6px rgba(0,0,0,0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-              paddingLeft: `${6 * scale}px`,
-              zIndex: 10
-            }}
-          >
-            {/* 금속 버튼 */}
+          {/* 스파클: 똑딱이 스트랩 */}
+          {diaryType.includes('sparkle') && (
             <div 
               style={{
-                width: `${10 * scale}px`,
-                height: `${10 * scale}px`,
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #E2C285 0%, #B8860B 100%)',
-                boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.6), 0 1px 3px rgba(0,0,0,0.3)'
+                position: 'absolute',
+                right: -1,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: `${70 * scale}px`,
+                height: `${70 * scale}px`,
+                backgroundColor: '#F8F6F0', // 크림색
+                border: '1px solid rgba(0,0,0,0.08)',
+                borderRight: 'none',
+                borderRadius: `${16 * scale}px 0 0 ${16 * scale}px`,
+                boxShadow: '-3px 3px 8px rgba(0,0,0,0.08), inset 1px 1px 2px rgba(255,255,255,0.8)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+                paddingLeft: `${16 * scale}px`,
+                zIndex: 10
               }}
-            ></div>
-          </div>
+            >
+              {/* 금속 버튼 */}
+              <div 
+                style={{
+                  width: `${24 * scale}px`,
+                  height: `${24 * scale}px`,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #E0E0E0 0%, #9E9E9E 100%)', // 실버
+                  boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.4), 0 2px 4px rgba(0,0,0,0.3)'
+                }}
+              ></div>
+            </div>
+          )}
+
+          {/* 블림: 고무줄 밴드 및 태그 */}
+          {diaryType === 'blim' && (
+            <>
+              {/* 고무줄 밴드 */}
+              <div 
+                style={{
+                  position: 'absolute',
+                  right: `${20 * scale}px`,
+                  top: 0,
+                  bottom: 0,
+                  width: `${12 * scale}px`,
+                  backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                  boxShadow: 'inset 2px 0 4px rgba(0,0,0,0.05), inset -2px 0 4px rgba(0,0,0,0.05), 2px 0 4px rgba(0,0,0,0.1), -2px 0 4px rgba(0,0,0,0.1)',
+                  zIndex: 5
+                }}
+              />
+              {/* 하단 흰색 타원형 태그 */}
+              <div
+                style={{
+                  position: 'absolute',
+                  right: `${25 * scale}px`,
+                  bottom: `${25 * scale}px`,
+                  width: `${55 * scale}px`,
+                  height: `${20 * scale}px`,
+                  backgroundColor: '#F8F9FA',
+                  borderRadius: '50%',
+                  boxShadow: '1px 2px 4px rgba(0,0,0,0.1), inset 0 1px 2px rgba(255,255,255,0.8)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: `0 ${6 * scale}px`,
+                  zIndex: 6,
+                  transform: 'rotate(0deg)'
+                }}
+              >
+                <div style={{ width: `${2 * scale}px`, height: `${2 * scale}px`, borderRadius: '50%', backgroundColor: '#9ca3af', boxShadow: 'inset 0.5px 0.5px 1px rgba(0,0,0,0.3)' }} />
+                <span style={{ fontSize: `${7 * scale}px`, color: '#888', fontWeight: 'bold', letterSpacing: '1px', fontFamily: 'sans-serif' }}>OBJINT</span>
+                <div style={{ width: `${2 * scale}px`, height: `${2 * scale}px`, borderRadius: '50%', backgroundColor: '#9ca3af', boxShadow: 'inset 0.5px 0.5px 1px rgba(0,0,0,0.3)' }} />
+              </div>
+            </>
+          )}
         </div>
 
         <div className="absolute bottom-6 bg-black/60 backdrop-blur-sm text-white text-[11px] px-3 py-1.5 rounded-full z-10 tracking-wide font-medium">
@@ -267,7 +318,7 @@ export default function App() {
                       backgroundColor: val.hex,
                       backgroundImage: `url("${val.imageUrl}")`,
                       backgroundRepeat: 'repeat',
-                      backgroundSize: '50px 50px'
+                      backgroundSize: val.bgSizeSmall
                     }}
                   ></div>
                   <span className="font-bold text-[13px] flex items-center gap-1">
@@ -323,44 +374,89 @@ export default function App() {
               backgroundColor: DIARY_TYPES[diaryType].hex,
               backgroundImage: `url("${DIARY_TYPES[diaryType].imageUrl}")`,
               backgroundRepeat: 'repeat',
-              backgroundSize: '80px 80px',
+              backgroundSize: DIARY_TYPES[diaryType].bgSize,
               borderRadius: '3px 12px 12px 3px',
               border: '1px solid rgba(0,0,0,0.08)',
-              boxShadow: 'inset 6px 0 12px rgba(0,0,0,0.15)'
+              borderRight: 'none',
+              boxShadow: 'inset 6px 0 12px rgba(0,0,0,0.15), 2px 2px 8px rgba(0,0,0,0.05)'
             }}
           >
-            {/* 똑딱이 스트랩 (다운로드용) */}
-            <div 
-              style={{
-                position: 'absolute',
-                right: -1,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: `${35 * 0.95}px`,
-                height: `${25 * 0.95}px`,
-                backgroundColor: '#FDFBF7',
-                border: '1px solid rgba(0,0,0,0.1)',
-                borderRight: 'none',
-                borderRadius: `${6 * 0.95}px 0 0 ${6 * 0.95}px`,
-                boxShadow: '-2px 2px 6px rgba(0,0,0,0.1)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'flex-start',
-                paddingLeft: `${6 * 0.95}px`,
-                zIndex: 10
-              }}
-            >
-              {/* 금속 버튼 */}
+            {/* 스파클: 똑딱이 스트랩 (다운로드용) */}
+            {diaryType.includes('sparkle') && (
               <div 
                 style={{
-                  width: `${10 * 0.95}px`,
-                  height: `${10 * 0.95}px`,
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #E2C285 0%, #B8860B 100%)',
-                  boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.6), 0 1px 3px rgba(0,0,0,0.3)'
+                  position: 'absolute',
+                  right: -1,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: `${70 * 0.95}px`,
+                  height: `${70 * 0.95}px`,
+                  backgroundColor: '#F8F6F0',
+                  border: '1px solid rgba(0,0,0,0.08)',
+                  borderRight: 'none',
+                  borderRadius: `${16 * 0.95}px 0 0 ${16 * 0.95}px`,
+                  boxShadow: '-3px 3px 8px rgba(0,0,0,0.08), inset 1px 1px 2px rgba(255,255,255,0.8)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-start',
+                  paddingLeft: `${16 * 0.95}px`,
+                  zIndex: 10
                 }}
-              ></div>
-            </div>
+              >
+                {/* 금속 버튼 */}
+                <div 
+                  style={{
+                    width: `${24 * 0.95}px`,
+                    height: `${24 * 0.95}px`,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #E0E0E0 0%, #9E9E9E 100%)', // 실버
+                    boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.4), 0 2px 4px rgba(0,0,0,0.3)'
+                  }}
+                ></div>
+              </div>
+            )}
+
+            {/* 블림: 고무줄 밴드 및 태그 (다운로드용) */}
+            {diaryType === 'blim' && (
+              <>
+                {/* 고무줄 밴드 */}
+                <div 
+                  style={{
+                    position: 'absolute',
+                    right: `${20 * 0.95}px`,
+                    top: 0,
+                    bottom: 0,
+                    width: `${12 * 0.95}px`,
+                    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                    boxShadow: 'inset 2px 0 4px rgba(0,0,0,0.05), inset -2px 0 4px rgba(0,0,0,0.05), 2px 0 4px rgba(0,0,0,0.1), -2px 0 4px rgba(0,0,0,0.1)',
+                    zIndex: 5
+                  }}
+                />
+                {/* 하단 흰색 타원형 태그 */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    right: `${25 * 0.95}px`,
+                    bottom: `${25 * 0.95}px`,
+                    width: `${55 * 0.95}px`,
+                    height: `${20 * 0.95}px`,
+                    backgroundColor: '#F8F9FA',
+                    borderRadius: '50%',
+                    boxShadow: '1px 2px 4px rgba(0,0,0,0.1), inset 0 1px 2px rgba(255,255,255,0.8)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: `0 ${6 * 0.95}px`,
+                    zIndex: 6,
+                    transform: 'rotate(0deg)'
+                  }}
+                >
+                  <div style={{ width: `${2 * 0.95}px`, height: `${2 * 0.95}px`, borderRadius: '50%', backgroundColor: '#9ca3af', boxShadow: 'inset 0.5px 0.5px 1px rgba(0,0,0,0.3)' }} />
+                  <span style={{ fontSize: `${7 * 0.95}px`, color: '#888', fontWeight: 'bold', letterSpacing: '1px', fontFamily: 'sans-serif' }}>OBJINT</span>
+                  <div style={{ width: `${2 * 0.95}px`, height: `${2 * 0.95}px`, borderRadius: '50%', backgroundColor: '#9ca3af', boxShadow: 'inset 0.5px 0.5px 1px rgba(0,0,0,0.3)' }} />
+                </div>
+              </>
+            )}
           </div>
           <div className="absolute bottom-10 bg-black/60 backdrop-blur-md text-white text-[13px] px-4 py-2 rounded-full z-10 tracking-wide font-medium">
             {currentRealText} • {DIARY_TYPES[diaryType].name}
