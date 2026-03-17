@@ -16,21 +16,21 @@ const DIARY_TYPES: Record<string, { name: string; hex: string; imageUrl: string;
   sparkleSky: { 
     name: '스파클 - 하늘', 
     hex: '#B5CBE8', // 사진과 유사한 톤다운된 하늘색
-    imageUrl: 'https://i.ibb.co/WCjzp5w/image.png',
+    imageUrl: 'https://i.ibb.co/FLV92PtM/image.png',
     bgSize: 'cover',
     bgSizeSmall: 'cover'
   },
   sparklePink: { 
     name: '스파클 - 분홍', 
     hex: '#EBBBD0', // 사진과 유사한 차분한 핑크색
-    imageUrl: 'https://i.ibb.co/G4tWW9jp/image.png',
+    imageUrl: 'https://i.ibb.co/B2nMDRrV/image.png',
     bgSize: 'cover',
     bgSizeSmall: 'cover'
   },
   blim: { 
     name: '블림', 
     hex: '#DCE5F0', // 사진과 동일한 아주 창백하고 은은한 얼음빛 하늘색
-    imageUrl: 'https://i.ibb.co/n8NxHzQ8/2026-03-16-220208.png',
+    imageUrl: 'https://i.ibb.co/whWCSSSV/image.jpg',
     bgSize: 'cover',
     bgSizeSmall: 'cover'
   }
