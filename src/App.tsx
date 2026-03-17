@@ -17,20 +17,20 @@ const DIARY_TYPES: Record<string, { name: string; hex: string; imageUrl: string;
     name: '스파클 - 하늘', 
     hex: '#B5CBE8', // 사진과 유사한 톤다운된 하늘색
     imageUrl: 'https://i.ibb.co/FLV92PtM/image.png',
-    bgSize: 'cover',
+    bgSize: '185px 360px',
     bgSizeSmall: 'cover'
   },
   sparklePink: { 
     name: '스파클 - 분홍', 
     hex: '#EBBBD0', // 사진과 유사한 차분한 핑크색
     imageUrl: 'https://i.ibb.co/B2nMDRrV/image.png',
-    bgSize: 'cover',
+    bgSize: '185px 360px',
     bgSizeSmall: 'cover'
   },
   blim: { 
     name: '블림', 
     hex: '#DCE5F0', // 사진과 동일한 아주 창백하고 은은한 얼음빛 하늘색
-    imageUrl: 'https://i.ibb.co/whWCSSSV/image.jpg',
+    imageUrl: 'https://i.ibb.co/m5Bd83VV/image.jpg',
     bgSize: 'cover',
     bgSizeSmall: 'cover'
   }
@@ -42,6 +42,15 @@ const SIZES: Record<string, { name: string; realText: string; width: number; hei
   s: { name: 'S', realText: '205 X 200mm', width: 185, height: 360 },
   b6: { name: 'B6', realText: '285 X 195mm', width: 257, height: 351 },
   a6: { name: 'A6', realText: '230 X 155mm', width: 207, height: 279 }
+};
+
+const getScaledBgSize = (bgSize: string, currentScale: number) => {
+  if (bgSize === 'cover' || bgSize === 'contain') return bgSize;
+  const parts = bgSize.split(' ');
+  if (parts.length === 2) {
+    return `${parseFloat(parts[0]) * currentScale}px ${parseFloat(parts[1]) * currentScale}px`;
+  }
+  return bgSize;
 };
 
 export default function App() {
@@ -174,7 +183,7 @@ export default function App() {
             backgroundColor: DIARY_TYPES[diaryType].hex,
             backgroundImage: `url("${DIARY_TYPES[diaryType].imageUrl}")`,
             backgroundRepeat: 'repeat',
-            backgroundSize: DIARY_TYPES[diaryType].bgSize,
+            backgroundSize: getScaledBgSize(DIARY_TYPES[diaryType].bgSize, scale),
             borderRadius: '3px 12px 12px 3px',
             border: '1px solid rgba(0,0,0,0.08)',
             borderRight: 'none', // 우측 흰색 속지 느낌 제거
@@ -189,33 +198,16 @@ export default function App() {
                 right: -1,
                 top: '50%',
                 transform: 'translateY(-50%)',
-                width: `${70 * scale}px`,
-                height: `${70 * scale}px`,
-                backgroundColor: '#F8F6F0', // 크림색
-                border: '1px solid rgba(0,0,0,0.08)',
-                borderRight: 'none',
-                borderRadius: `${16 * scale}px 0 0 ${16 * scale}px`,
-                boxShadow: '-3px 3px 8px rgba(0,0,0,0.08), inset 1px 1px 2px rgba(255,255,255,0.8)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'flex-start',
-                paddingLeft: `${16 * scale}px`,
+                width: `${210 * scale}px`,
+                height: `${210 * scale}px`,
+                backgroundImage: 'url("https://i.ibb.co/8nxf6gcx/image.png")',
+                backgroundSize: 'contain',
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right center',
                 zIndex: 10,
                 transition: 'all 0.5s ease-in-out'
               }}
-            >
-              {/* 금속 버튼 */}
-              <div 
-                style={{
-                  width: `${24 * scale}px`,
-                  height: `${24 * scale}px`,
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #E0E0E0 0%, #9E9E9E 100%)', // 실버
-                  boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.4), 0 2px 4px rgba(0,0,0,0.3)',
-                  transition: 'all 0.5s ease-in-out'
-                }}
-              ></div>
-            </div>
+            />
           )}
 
           {/* 블림: 고무줄 밴드 및 태그 */}
@@ -432,7 +424,7 @@ export default function App() {
               backgroundColor: DIARY_TYPES[diaryType].hex,
               backgroundImage: `url("${DIARY_TYPES[diaryType].imageUrl}")`,
               backgroundRepeat: 'repeat',
-              backgroundSize: DIARY_TYPES[diaryType].bgSize,
+              backgroundSize: getScaledBgSize(DIARY_TYPES[diaryType].bgSize, 0.95),
               borderRadius: '3px 12px 12px 3px',
               border: '1px solid rgba(0,0,0,0.08)',
               borderRight: 'none',
@@ -447,31 +439,15 @@ export default function App() {
                   right: -1,
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  width: `${70 * 0.95}px`,
-                  height: `${70 * 0.95}px`,
-                  backgroundColor: '#F8F6F0',
-                  border: '1px solid rgba(0,0,0,0.08)',
-                  borderRight: 'none',
-                  borderRadius: `${16 * 0.95}px 0 0 ${16 * 0.95}px`,
-                  boxShadow: '-3px 3px 8px rgba(0,0,0,0.08), inset 1px 1px 2px rgba(255,255,255,0.8)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'flex-start',
-                  paddingLeft: `${16 * 0.95}px`,
+                  width: `${210 * 0.95}px`,
+                  height: `${210 * 0.95}px`,
+                  backgroundImage: 'url("https://i.ibb.co/8nxf6gcx/image.png")',
+                  backgroundSize: 'contain',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right center',
                   zIndex: 10
                 }}
-              >
-                {/* 금속 버튼 */}
-                <div 
-                  style={{
-                    width: `${24 * 0.95}px`,
-                    height: `${24 * 0.95}px`,
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #E0E0E0 0%, #9E9E9E 100%)', // 실버
-                    boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.4), 0 2px 4px rgba(0,0,0,0.3)'
-                  }}
-                ></div>
-              </div>
+              />
             )}
 
             {/* 블림: 고무줄 밴드 및 태그 (다운로드용) */}
