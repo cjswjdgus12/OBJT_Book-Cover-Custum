@@ -87,6 +87,8 @@ export default function App() {
         
         if (isIOS) {
           await toPng(element, { cacheBust: true, pixelRatio: 1, backgroundColor: '#e5e7eb', style: { transform: 'none', left: '0', top: '0', position: 'relative' } }).catch(() => {});
+          // 추가 지연시간 부여
+          await new Promise(resolve => setTimeout(resolve, 300));
         }
 
         const dataUrl = await toPng(element, {
@@ -210,6 +212,7 @@ export default function App() {
                 alt="strap"
                 style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'right center' }}
                 referrerPolicy="no-referrer"
+                crossOrigin="anonymous"
               />
             </div>
           )}
@@ -406,10 +409,10 @@ export default function App() {
         이미지 다운로드 전용 캡처 영역 (사용자 눈에는 보이지 않음)
         패널이 열려있든 닫혀있든 상관없이 무조건 '0.95 비율(확대된 상태)'로 고정되어 예쁘게 저장됩니다.
       */}
-      <div className="absolute top-0 left-[-9999px] pointer-events-none z-[-1]">
+      <div className="fixed top-0 left-0 opacity-[0.01] pointer-events-none z-[-1] overflow-hidden">
         <div 
           id="export-capture-area" 
-          className="w-[420px] h-[600px] bg-[#e5e7eb] relative flex flex-col items-center justify-center overflow-hidden font-sans"
+          className="w-[420px] h-[600px] bg-[#e5e7eb] relative flex flex-col items-center justify-center font-sans"
         >
           {/* 워터마크 (저장된 이미지 좌측 상단) */}
           <div className="absolute top-6 left-6 z-20 pointer-events-none">
@@ -454,6 +457,7 @@ export default function App() {
                   alt="strap"
                   style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'right center' }}
                   referrerPolicy="no-referrer"
+                  crossOrigin="anonymous"
                 />
               </div>
             )}
