@@ -171,7 +171,11 @@ export default function App() {
   
   const rawWidth = size === 'custom' ? ((Number(customWidth) || 200) / 2) * 1.8 : SIZES[size].width;
   const rawHeight = size === 'custom' ? (Number(customHeight) || 150) * 1.8 : SIZES[size].height;
-  
+
+  // 내보내기용 캔버스 크기
+  const EXPORT_CANVAS_W = 420;
+  const EXPORT_CANVAS_H = 600;
+
   const currentWidth = rawWidth * scale;
   const currentHeight = rawHeight * scale;
   const currentRealText = size === 'custom' ? `직접 입력 (${customWidth || 0} X ${customHeight || 0}mm)` : `${SIZES[size].name} (${SIZES[size].realText})`;
@@ -220,16 +224,18 @@ export default function App() {
       }));
 
       // 폰트 및 레이아웃 안정화 대기
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1200));
 
       console.log('html2canvas 실행 중...');
       const canvas = await html2canvas(element, {
         useCORS: true,
         allowTaint: false,
-        scale: 2, // 안정성을 위해 2배로 조정
+        scale: 2,
         backgroundColor: '#e5e7eb',
         logging: false,
         imageTimeout: 30000,
+        width: EXPORT_CANVAS_W,
+        height: EXPORT_CANVAS_H,
         onclone: (clonedDoc) => {
           const clonedElement = clonedDoc.getElementById('export-capture-area');
           if (clonedElement) {
@@ -240,11 +246,10 @@ export default function App() {
             clonedElement.style.top = '0';
             clonedElement.style.opacity = '1';
             
-            // 클론된 문서의 바디 스타일 초기화
             clonedDoc.body.style.margin = '0';
             clonedDoc.body.style.padding = '0';
-            clonedDoc.body.style.width = '420px';
-            clonedDoc.body.style.height = '600px';
+            clonedDoc.body.style.width = `${EXPORT_CANVAS_W}px`;
+            clonedDoc.body.style.height = `${EXPORT_CANVAS_H}px`;
             clonedDoc.body.style.overflow = 'hidden';
             clonedDoc.body.style.backgroundColor = '#e5e7eb';
           }
@@ -649,7 +654,7 @@ export default function App() {
 
       {/* ★ 추가된 부분 ★ 
         이미지 다운로드 전용 캡처 영역 (사용자 눈에는 보이지 않음)
-        패널이 열려있든 닫혀있든 상관없이 무조건 '0.95 비율(확대된 상태)'로 고정되어 예쁘게 저장됩니다.
+        미리보기와 동일한 비율과 배치를 보장하기 위해 모든 스타일을 인라인으로 정의합니다.
       */}
       <div 
         style={{ 
@@ -671,61 +676,60 @@ export default function App() {
             width: '420px',
             height: '600px',
             backgroundColor: '#e5e7eb',
-            display: 'block',
             overflow: 'hidden',
             boxSizing: 'border-box',
             position: 'relative',
             fontFamily: 'sans-serif'
           }}
         >
+          {/* 배경 도트 패턴 */}
+          <div style={{ 
+            position: 'absolute',
+            inset: 0,
+            opacity: 0.2,
+            backgroundImage: 'radial-gradient(#9ca3af 1px, transparent 1px)', 
+            backgroundSize: '16px 16px' 
+          }}></div>
+
           {/* 워터마크 (저장된 이미지 좌측 상단) */}
-          <div style={{ position: 'absolute', top: '24px', left: '24px', zIndex: 20 }}>
+          <div style={{ position: 'absolute', top: '24px', left: '24px', zIndex: 50 }}>
             <div style={{ 
-                  fontSize: '20px',
+                  fontSize: '14px',
                   fontWeight: 'bold',
                   letterSpacing: '-0.05em',
                   padding: '4px 12px',
                   borderRadius: '9999px',
                   color: '#111827', 
-                  backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                  border: '1px solid rgba(0,0,0,0.1)'
+                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
                 }}>
               OBJT
             </div>
           </div>
-
-          <div style={{ 
-            position: 'absolute',
-            inset: 0,
-            opacity: 0.2,
-            pointerEvents: 'none',
-            backgroundImage: 'radial-gradient(#9ca3af 1px, transparent 1px)', 
-            backgroundSize: '16px 16px' 
-          }}></div>
           
+          {/* 다이어리 본체 (0.8 스케일로 고정하여 미리보기의 '큰 상태'와 완벽 동기화) */}
           <div 
             style={{
               position: 'absolute',
-              zIndex: 10,
-              width: `${rawWidth * 0.95}px`,
-              height: `${rawHeight * 0.95}px`,
-              left: `${(420 - rawWidth * 0.95) / 2}px`,
-              top: `${(600 - rawHeight * 0.95) / 2}px`,
+              width: `${rawWidth * 0.8}px`,
+              height: `${rawHeight * 0.8}px`,
+              left: `${(420 - rawWidth * 0.8) / 2}px`,
+              top: `${(600 - rawHeight * 0.8) / 2}px`,
               borderRadius: '3px 12px 12px 3px',
               boxShadow: 'inset 6px 0 12px rgba(0,0,0,0.15), 2px 2px 8px rgba(0,0,0,0.05)',
-              overflow: 'visible'
+              zIndex: 10,
+              overflow: 'visible' // 똑딱이가 튀어나와야 하므로 visible 필수
             }}
           >
-            {/* 원단 텍스처 레이어 (다운로드용) */}
+            {/* 원단 텍스처 레이어 */}
             <div 
               style={{
                 position: 'absolute',
                 inset: 0,
-                pointerEvents: 'none',
                 backgroundColor: DIARY_TYPES[diaryType].hex,
                 backgroundImage: `url("${DIARY_TYPES[diaryType].imageUrl}")`,
                 backgroundRepeat: 'repeat',
-                backgroundSize: getScaledBgSize(DIARY_TYPES[diaryType].bgSize, 0.95),
+                backgroundSize: getScaledBgSize(DIARY_TYPES[diaryType].bgSize, 0.8),
                 border: '1px solid rgba(0,0,0,0.08)',
                 borderRight: 'none',
                 borderRadius: 'inherit',
@@ -733,22 +737,18 @@ export default function App() {
               }}
             />
 
-            {/* 장식들 (다운로드용) - 절대 픽셀 좌표 사용 */}
+            {/* 장식들 */}
             {decorations.map((deco) => {
               const DecoIcon = DECORATION_TYPES[deco.type].icon;
-              const iconSize = 64 * 0.95;
-              const diaryW = rawWidth * 0.95;
-              const diaryH = rawHeight * 0.95;
-              const posX = (diaryW * deco.x / 100) - (iconSize / 2);
-              const posY = (diaryH * deco.y / 100) - (iconSize / 2);
-
+              const iconSize = 64 * 0.8;
               return (
                 <div
                   key={deco.id}
                   style={{
                     position: 'absolute',
-                    left: `${posX}px`,
-                    top: `${posY}px`,
+                    left: `${deco.x}%`,
+                    top: `${deco.y}%`,
+                    transform: 'translate(-50%, -50%)',
                     zIndex: 30,
                     width: `${iconSize}px`,
                     height: `${iconSize}px`
@@ -763,14 +763,17 @@ export default function App() {
                 </div>
               );
             })}
+
+            {/* 스파클: 똑딱이 스트랩 (미리보기와 동일한 로직 적용) */}
             {diaryType.includes('sparkle') && (
               <div 
                 style={{
                   position: 'absolute',
-                  left: `${(rawWidth * 0.95) - (210 * 0.95) + (25 * 0.95)}px`,
-                  top: `${(rawHeight * 0.95 - 210 * 0.95) / 2}px`,
-                  width: `${210 * 0.95}px`,
-                  height: `${210 * 0.95}px`,
+                  right: `${-25 * 0.8}px`,
+                  top: '50%',
+                  marginTop: `${-(210 * 0.8) / 2}px`,
+                  width: `${210 * 0.8}px`,
+                  height: `${210 * 0.8}px`,
                   zIndex: 10,
                   pointerEvents: 'none'
                 }}
@@ -781,7 +784,9 @@ export default function App() {
                   style={{ 
                     width: '100%', 
                     height: '100%', 
-                    display: 'block'
+                    objectFit: 'contain', 
+                    objectPosition: 'right center',
+                    display: 'block' 
                   }}
                   referrerPolicy="no-referrer"
                   crossOrigin="anonymous"
@@ -789,47 +794,47 @@ export default function App() {
               </div>
             )}
 
-            {/* 블림: 고무줄 밴드 및 태그 (다운로드용) */}
+            {/* 블림: 고무줄 밴드 및 태그 */}
             {diaryType === 'blim' && (
               <>
-                {/* 고무줄 밴드 */}
                 <div 
                   style={{
                     position: 'absolute',
-                    left: `${(rawWidth * 0.95) - (20 * 0.95) - (12 * 0.95)}px`,
+                    right: `${20 * 0.8}px`,
                     top: 0,
                     bottom: 0,
-                    width: `${12 * 0.95}px`,
+                    width: `${12 * 0.8}px`,
                     backgroundColor: 'rgba(255, 255, 255, 0.4)',
                     boxShadow: 'inset 2px 0 4px rgba(0,0,0,0.05), inset -2px 0 4px rgba(0,0,0,0.05), 2px 0 4px rgba(0,0,0,0.1), -2px 0 4px rgba(0,0,0,0.1)',
                     zIndex: 5
                   }}
                 />
-                {/* 하단 흰색 타원형 태그 */}
                 <div
                   style={{
                     position: 'absolute',
-                    left: `${(rawWidth * 0.95) - (25 * 0.95) - (55 * 0.95)}px`,
-                    bottom: `${25 * 0.95}px`,
-                    width: `${55 * 0.95}px`,
-                    height: `${20 * 0.95}px`,
+                    right: `${25 * 0.8}px`,
+                    bottom: `${25 * 0.8}px`,
+                    width: `${55 * 0.8}px`,
+                    height: `${20 * 0.8}px`,
                     backgroundColor: '#F8F9FA',
                     borderRadius: '50%',
                     boxShadow: '1px 2px 4px rgba(0,0,0,0.1)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: `0 ${6 * 0.95}px`,
+                    padding: `0 ${6 * 0.8}px`,
                     zIndex: 6
                   }}
                 >
-                  <div style={{ width: `${2 * 0.95}px`, height: `${2 * 0.95}px`, borderRadius: '50%', backgroundColor: '#9ca3af' }} />
-                  <span style={{ fontSize: `${7 * 0.95}px`, color: '#888', fontWeight: 'bold', letterSpacing: '1px', fontFamily: 'sans-serif' }}>OBJINT</span>
-                  <div style={{ width: `${2 * 0.95}px`, height: `${2 * 0.95}px`, borderRadius: '50%', backgroundColor: '#9ca3af' }} />
+                  <div style={{ width: `${2 * 0.8}px`, height: `${2 * 0.8}px`, borderRadius: '50%', backgroundColor: '#9ca3af' }} />
+                  <span style={{ fontSize: `${7 * 0.8}px`, color: '#888', fontWeight: 'bold', letterSpacing: '1px', fontFamily: 'sans-serif' }}>OBJINT</span>
+                  <div style={{ width: `${2 * 0.8}px`, height: `${2 * 0.8}px`, borderRadius: '50%', backgroundColor: '#9ca3af' }} />
                 </div>
               </>
             )}
           </div>
+
+          {/* 하단 정보 캡션 */}
           <div 
             style={{ 
               position: 'absolute', 
@@ -838,7 +843,7 @@ export default function App() {
               width: '420px',
               display: 'flex', 
               justifyContent: 'center', 
-              zIndex: 10 
+              zIndex: 50 
             }}
           >
             <div style={{ 
