@@ -198,7 +198,7 @@ export default function App() {
     
     console.log('이미지 저장 시작...');
     
-    let originalScrollY = window.scrollY;
+    const originalScrollY = window.scrollY;
     
     try {
       const element = document.getElementById('export-capture-area');
@@ -220,13 +220,13 @@ export default function App() {
       }));
 
       // 폰트 및 레이아웃 안정화 대기
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       console.log('html2canvas 실행 중...');
       const canvas = await html2canvas(element, {
         useCORS: true,
         allowTaint: false,
-        scale: 3, // 고해상도 출력
+        scale: 2, // 안정성을 위해 2배로 조정
         backgroundColor: '#e5e7eb',
         logging: false,
         imageTimeout: 30000,
@@ -235,7 +235,7 @@ export default function App() {
           if (clonedElement) {
             clonedElement.style.display = 'block';
             clonedElement.style.visibility = 'visible';
-            clonedElement.style.position = 'relative';
+            clonedElement.style.position = 'absolute';
             clonedElement.style.left = '0';
             clonedElement.style.top = '0';
             clonedElement.style.opacity = '1';
@@ -246,6 +246,7 @@ export default function App() {
             clonedDoc.body.style.width = '420px';
             clonedDoc.body.style.height = '600px';
             clonedDoc.body.style.overflow = 'hidden';
+            clonedDoc.body.style.backgroundColor = '#e5e7eb';
           }
         }
       });
@@ -652,46 +653,60 @@ export default function App() {
       */}
       <div 
         style={{ 
-          position: 'fixed', 
-          top: 0, 
-          left: 0, 
+          position: 'absolute', 
+          top: '0', 
+          left: '-9999px', 
           width: '420px',
           height: '600px',
-          opacity: 0,
+          opacity: 1,
           pointerEvents: 'none', 
           zIndex: -100,
-          overflow: 'hidden'
+          overflow: 'hidden',
+          backgroundColor: '#e5e7eb'
         }}
       >
         <div 
           id="export-capture-area" 
-          className="w-[420px] h-[600px] relative font-sans"
           style={{ 
+            width: '420px',
+            height: '600px',
             backgroundColor: '#e5e7eb',
             display: 'block',
             overflow: 'hidden',
             boxSizing: 'border-box',
-            position: 'relative'
+            position: 'relative',
+            fontFamily: 'sans-serif'
           }}
         >
           {/* 워터마크 (저장된 이미지 좌측 상단) */}
           <div style={{ position: 'absolute', top: '24px', left: '24px', zIndex: 20 }}>
-            <h1 className="text-xl font-bold tracking-tighter px-3 py-1 rounded-full"
-                style={{ 
+            <div style={{ 
+                  fontSize: '20px',
+                  fontWeight: 'bold',
+                  letterSpacing: '-0.05em',
+                  padding: '4px 12px',
+                  borderRadius: '9999px',
                   color: '#111827', 
-                  backgroundColor: 'rgba(255, 255, 255, 0.7)',
-                  border: '1px solid rgba(0,0,0,0.05)'
+                  backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                  border: '1px solid rgba(0,0,0,0.1)'
                 }}>
               OBJT
-            </h1>
+            </div>
           </div>
 
-          <div className="absolute inset-0 opacity-20 pointer-events-none" 
-               style={{ backgroundImage: 'radial-gradient(#9ca3af 1px, transparent 1px)', backgroundSize: '16px 16px' }}></div>
+          <div style={{ 
+            position: 'absolute',
+            inset: 0,
+            opacity: 0.2,
+            pointerEvents: 'none',
+            backgroundImage: 'radial-gradient(#9ca3af 1px, transparent 1px)', 
+            backgroundSize: '16px 16px' 
+          }}></div>
           
           <div 
-            className="absolute z-10"
             style={{
+              position: 'absolute',
+              zIndex: 10,
               width: `${rawWidth * 0.95}px`,
               height: `${rawHeight * 0.95}px`,
               left: `${(420 - rawWidth * 0.95) / 2}px`,
@@ -703,8 +718,10 @@ export default function App() {
           >
             {/* 원단 텍스처 레이어 (다운로드용) */}
             <div 
-              className="absolute inset-0 pointer-events-none"
               style={{
+                position: 'absolute',
+                inset: 0,
+                pointerEvents: 'none',
                 backgroundColor: DIARY_TYPES[diaryType].hex,
                 backgroundImage: `url("${DIARY_TYPES[diaryType].imageUrl}")`,
                 backgroundRepeat: 'repeat',
@@ -728,11 +745,13 @@ export default function App() {
               return (
                 <div
                   key={deco.id}
-                  className="absolute"
                   style={{
+                    position: 'absolute',
                     left: `${posX}px`,
                     top: `${posY}px`,
                     zIndex: 30,
+                    width: `${iconSize}px`,
+                    height: `${iconSize}px`
                   }}
                 >
                   <DecoIcon 
@@ -801,8 +820,7 @@ export default function App() {
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     padding: `0 ${6 * 0.95}px`,
-                    zIndex: 6,
-                    transform: 'rotate(0deg)'
+                    zIndex: 6
                   }}
                 >
                   <div style={{ width: `${2 * 0.95}px`, height: `${2 * 0.95}px`, borderRadius: '50%', backgroundColor: '#9ca3af' }} />
@@ -823,8 +841,15 @@ export default function App() {
               zIndex: 10 
             }}
           >
-            <div className="px-4 py-2 rounded-full tracking-wide font-medium"
-                 style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)', color: '#ffffff', fontSize: '13px' }}>
+            <div style={{ 
+                  padding: '8px 16px',
+                  borderRadius: '9999px',
+                  backgroundColor: 'rgba(0, 0, 0, 0.8)', 
+                  color: '#ffffff', 
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  letterSpacing: '0.025em'
+                }}>
               {currentRealText} • {DIARY_TYPES[diaryType].name}{getDecorationInfo()}
             </div>
           </div>
