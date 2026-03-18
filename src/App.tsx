@@ -193,86 +193,148 @@ export default function App() {
 
   // 미리보기 영역 캡처 및 이미지 다운로드 함수
   const handleDownloadImage = async () => {
+    if (isDownloading) return;
     setIsDownloading(true);
+    
+    console.log('이미지 저장 시작...');
+    
+    let originalScrollY = 0;
+    
     try {
       const element = document.getElementById('export-capture-area');
-      if (element) {
-        // iOS Safari 대응을 위한 html2canvas 설정
-        const canvas = await html2canvas(element, {
-          useCORS: true,
-          allowTaint: false,
-          scale: 2, // 고해상도
-          backgroundColor: '#e5e7eb',
-          logging: true, // 디버깅을 위해 로깅 활성화
-          imageTimeout: 15000,
-          onclone: (clonedDoc) => {
-            const clonedElement = clonedDoc.getElementById('export-capture-area');
-            if (clonedElement) {
-              clonedElement.style.position = 'relative';
-              clonedElement.style.left = '0';
-              clonedElement.style.top = '0';
-              clonedElement.style.zIndex = '1000';
-              clonedElement.style.visibility = 'visible';
-              clonedElement.style.display = 'flex';
-            }
-          }
+      if (!element) {
+        throw new Error('캡처 영역을 찾을 수 없습니다.');
+      }
+
+      // 캡처 전 잠시 대기 (이미지 로딩 등)
+      originalScrollY = window.scrollY;
+      window.scrollTo(0, 0);
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      console.log('이미지 프리로딩 중...');
+      const imageUrls = Object.values(DIARY_TYPES).map(t => t.imageUrl);
+      await Promise.all(imageUrls.map(url => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => resolve(true);
+          img.onerror = () => resolve(false);
+          img.src = url;
         });
+      }));
 
-        const dataUrl = canvas.toDataURL('image/png');
-        const fileName = `OBJT_북커버_${SIZES[size]?.name || '직접입력'}_${DIARY_TYPES[diaryType].name}.png`;
-
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-        
-        if (isIOS) {
-          try {
-            // iOS는 a 태그 download 속성이 잘 작동하지 않으므로 Web Share API 사용
-            const response = await fetch(dataUrl);
-            const blob = await response.blob();
-            const file = new File([blob], fileName, { type: 'image/png' });
-
-            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-              await navigator.share({
-                files: [file],
-                title: 'OBJT 북커버',
-              });
-            } else {
-              // Share API 지원 안 할 경우 새 창 띄우기 (길게 눌러 저장 유도)
-              const newWindow = window.open();
-              if (newWindow) {
-                newWindow.document.write(`
-                  <html>
-                    <head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-                    <body style="margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#f3f4f6; height:100vh;">
-                      <p style="font-family:sans-serif; color:#374151; margin-bottom:16px; font-weight:bold;">이미지를 길게 눌러 '사진 앱에 저장'을 선택해주세요.</p>
-                      <img src="${dataUrl}" style="max-width:90%; max-height:80vh; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.1);" />
-                    </body>
-                  </html>
-                `);
-                newWindow.document.close();
-              } else {
-                alert('팝업 차단을 해제해주세요.');
-              }
-            }
-          } catch (shareError) {
-            // 사용자가 공유를 취소한 경우는 에러 무시
-            if ((shareError as Error).name !== 'AbortError') {
-              console.error('공유 실패:', shareError);
-              alert('이미지 저장에 실패했습니다. 다시 시도해주세요.');
-            }
+      console.log('html2canvas 실행 중...');
+      const canvas = await html2canvas(element, {
+        useCORS: true,
+        allowTaint: false,
+        scale: 2,
+        backgroundColor: '#e5e7eb',
+        logging: false,
+        imageTimeout: 20000,
+        scrollX: 0,
+        scrollY: 0,
+        x: 0,
+        y: 0,
+        width: 420,
+        height: 600,
+        onclone: (clonedDoc) => {
+          const clonedElement = clonedDoc.getElementById('export-capture-area');
+          if (clonedElement) {
+            // 클론된 문서에서 캡처 영역을 최상단 좌측에 강제 배치
+            clonedElement.style.position = 'absolute';
+            clonedElement.style.left = '0';
+            clonedElement.style.top = '0';
+            clonedElement.style.width = '420px';
+            clonedElement.style.height = '600px';
+            clonedElement.style.boxSizing = 'border-box';
+            clonedElement.style.margin = '0';
+            clonedElement.style.padding = '0';
+            clonedElement.style.display = 'block';
+            clonedElement.style.visibility = 'visible';
+            
+            // 클론된 문서의 바디 스타일 초기화
+            clonedDoc.body.style.margin = '0';
+            clonedDoc.body.style.padding = '0';
+            clonedDoc.body.style.overflow = 'hidden';
           }
-        } else {
-          // 안드로이드 및 PC (기존 방식)
-          const link = document.createElement('a');
-          link.download = fileName;
-          link.href = dataUrl;
-          link.click();
+        }
+      });
+
+      console.log('캔버스 생성 완료, 데이터 변환 중...');
+      const fileName = `OBJT_북커버_${SIZES[size]?.name || '직접입력'}_${DIARY_TYPES[diaryType].name}.png`;
+
+      // toBlob 사용 (대용량 이미지 대응)
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+      if (!blob) throw new Error('이미지 생성 실패');
+      
+      const dataUrl = canvas.toDataURL('image/png'); // iOS fallback용
+
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      
+      // 스크롤 위치 복구
+      window.scrollTo(0, originalScrollY);
+
+      if (isIOS) {
+        console.log('iOS 환경 감지, 공유 API 시도...');
+        try {
+          const file = new File([blob], fileName, { type: 'image/png' });
+
+          if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: 'OBJT 북커버',
+            });
+            console.log('공유 성공');
+          } else {
+            throw new Error('Share API 미지원');
+          }
+        } catch (shareError) {
+          console.log('공유 실패 또는 미지원, 새 창 열기 시도:', shareError);
+          const newWindow = window.open();
+          if (newWindow) {
+            newWindow.document.write(`
+              <html>
+                <head>
+                  <title>이미지 저장</title>
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  <style>
+                    body { margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#f3f4f6; height:100vh; font-family:sans-serif; }
+                    .container { text-align:center; padding:20px; }
+                    img { max-width:90%; max-height:70vh; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.1); margin-bottom:20px; }
+                    p { color:#374151; font-weight:bold; }
+                  </style>
+                </head>
+                <body>
+                  <div class="container">
+                    <p>이미지를 길게 눌러 '사진 앱에 저장'을 선택해주세요.</p>
+                    <img src="${dataUrl}" />
+                    <button onclick="window.close()" style="padding:10px 20px; background:#111827; color:white; border:none; border-radius:8px; font-weight:bold;">닫기</button>
+                  </div>
+                </body>
+              </html>
+            `);
+            newWindow.document.close();
+          } else {
+            alert('팝업 차단을 해제하고 다시 시도해주세요.');
+          }
         }
       } else {
-        alert('캡처할 영역을 찾을 수 없습니다.');
+        console.log('일반 환경, 다운로드 링크 생성...');
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = fileName;
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        console.log('다운로드 완료');
       }
     } catch (error) {
       console.error('이미지 저장 중 오류 발생:', error);
-      alert(`이미지 저장 실패: ${error instanceof Error ? error.message : String(error)}`);
+      // 에러 발생 시에도 스크롤 복구 시도
+      window.scrollTo(0, originalScrollY);
+      alert(`저장 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}\n다시 시도해 주세요.`);
     } finally {
       setIsDownloading(false);
     }
@@ -601,7 +663,7 @@ export default function App() {
       <div 
         style={{ 
           position: 'absolute', 
-          top: 0, 
+          top: '-9999px', 
           left: '-9999px', 
           pointerEvents: 'none', 
           zIndex: -1 
@@ -609,24 +671,39 @@ export default function App() {
       >
         <div 
           id="export-capture-area" 
-          className="w-[420px] h-[600px] bg-[#e5e7eb] relative flex flex-col items-center justify-center font-sans"
+          className="w-[420px] h-[600px] relative font-sans"
+          style={{ 
+            backgroundColor: '#e5e7eb',
+            display: 'block',
+            overflow: 'hidden',
+            boxSizing: 'border-box'
+          }}
         >
           {/* 워터마크 (저장된 이미지 좌측 상단) */}
-          <div className="absolute top-6 left-6 z-20 pointer-events-none">
-            <h1 className="text-xl font-bold text-gray-900 tracking-tighter drop-shadow-sm bg-white/50 px-3 py-1 rounded-full backdrop-blur-md">
+          <div style={{ position: 'absolute', top: '24px', left: '24px', zIndex: 20 }}>
+            <h1 className="text-xl font-bold tracking-tighter px-3 py-1 rounded-full"
+                style={{ 
+                  color: '#111827', 
+                  backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                  filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.05))'
+                }}>
               OBJT
             </h1>
           </div>
 
           <div className="absolute inset-0 opacity-20 pointer-events-none" 
                style={{ backgroundImage: 'radial-gradient(#9ca3af 1px, transparent 1px)', backgroundSize: '16px 16px' }}></div>
+          
           <div 
-            className="relative flex items-center justify-center z-10"
+            className="absolute z-10"
             style={{
-              width: `${rawWidth * 0.95}px`, // 무조건 0.95 확대 비율 적용
+              width: `${rawWidth * 0.95}px`,
               height: `${rawHeight * 0.95}px`,
+              left: `${(420 - rawWidth * 0.95) / 2}px`,
+              top: `${(600 - rawHeight * 0.95) / 2}px`,
               borderRadius: '3px 12px 12px 3px',
-              boxShadow: 'inset 6px 0 12px rgba(0,0,0,0.15), 2px 2px 8px rgba(0,0,0,0.05)'
+              boxShadow: 'inset 6px 0 12px rgba(0,0,0,0.15), 2px 2px 8px rgba(0,0,0,0.05)',
+              overflow: 'visible'
             }}
           >
             {/* 원단 텍스처 레이어 (다운로드용) */}
@@ -639,26 +716,27 @@ export default function App() {
                 backgroundSize: getScaledBgSize(DIARY_TYPES[diaryType].bgSize, 0.95),
                 border: '1px solid rgba(0,0,0,0.08)',
                 borderRight: 'none',
-                borderRadius: 'inherit'
+                borderRadius: 'inherit',
+                zIndex: 1
               }}
             />
 
             {/* 장식들 (다운로드용) */}
             {decorations.map((deco) => {
               const DecoIcon = DECORATION_TYPES[deco.type].icon;
+              const iconSize = 64 * 0.95;
               return (
                 <div
                   key={deco.id}
                   className="absolute"
                   style={{
-                    left: `${deco.x}%`,
-                    top: `${deco.y}%`,
-                    transform: 'translate(-50%, -50%)',
+                    left: `calc(${deco.x}% - ${iconSize / 2}px)`,
+                    top: `calc(${deco.y}% - ${iconSize / 2}px)`,
                     zIndex: 30,
                   }}
                 >
                   <DecoIcon 
-                    size={64 * 0.95} 
+                    size={iconSize} 
                     fill={DECORATION_TYPES[deco.type].color} 
                     color="white" 
                     strokeWidth={1.5}
@@ -670,9 +748,8 @@ export default function App() {
               <div 
                 style={{
                   position: 'absolute',
-                  right: -25 * 0.95,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
+                  left: `${(rawWidth * 0.95) - (210 * 0.95) + (25 * 0.95)}px`,
+                  top: `${(rawHeight * 0.95 - 210 * 0.95) / 2}px`,
                   width: `${210 * 0.95}px`,
                   height: `${210 * 0.95}px`,
                   zIndex: 10,
@@ -682,7 +759,11 @@ export default function App() {
                 <img 
                   src="https://i.ibb.co/8nxf6gcx/image.png" 
                   alt="strap"
-                  style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'right center' }}
+                  style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    display: 'block'
+                  }}
                   referrerPolicy="no-referrer"
                   crossOrigin="anonymous"
                 />
@@ -696,7 +777,7 @@ export default function App() {
                 <div 
                   style={{
                     position: 'absolute',
-                    right: `${20 * 0.95}px`,
+                    left: `${(rawWidth * 0.95) - (20 * 0.95) - (12 * 0.95)}px`,
                     top: 0,
                     bottom: 0,
                     width: `${12 * 0.95}px`,
@@ -709,7 +790,7 @@ export default function App() {
                 <div
                   style={{
                     position: 'absolute',
-                    right: `${25 * 0.95}px`,
+                    left: `${(rawWidth * 0.95) - (25 * 0.95) - (55 * 0.95)}px`,
                     bottom: `${25 * 0.95}px`,
                     width: `${55 * 0.95}px`,
                     height: `${20 * 0.95}px`,
@@ -731,8 +812,21 @@ export default function App() {
               </>
             )}
           </div>
-          <div className="absolute bottom-10 bg-black/60 backdrop-blur-md text-white text-[13px] px-4 py-2 rounded-full z-10 tracking-wide font-medium">
-            {currentRealText} • {DIARY_TYPES[diaryType].name}{getDecorationInfo()}
+          <div 
+            style={{ 
+              position: 'absolute', 
+              bottom: '40px', 
+              left: '0', 
+              width: '420px',
+              display: 'flex', 
+              justifyContent: 'center', 
+              zIndex: 10 
+            }}
+          >
+            <div className="px-4 py-2 rounded-full tracking-wide font-medium"
+                 style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)', color: '#ffffff', fontSize: '13px' }}>
+              {currentRealText} • {DIARY_TYPES[diaryType].name}{getDecorationInfo()}
+            </div>
           </div>
         </div>
       </div>
