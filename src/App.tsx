@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { Ruler, Layers, Check, Download } from 'lucide-react';
-import { toPng } from 'html-to-image';
+import html2canvas from 'html2canvas';
 
 // 사진과 동일한 느낌을 내는 SVG 패턴 생성 (세로줄만 남김)
 const SPARKLE_SVG = "data:image/svg+xml,%3Csvg width='120' height='120' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='stripes' width='3' height='3' patternUnits='userSpaceOnUse'%3E%3Crect width='1' height='3' fill='rgba(255,255,255,0.25)'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23stripes)'/%3E%3C/svg%3E";
@@ -79,33 +79,23 @@ export default function App() {
   const handleDownloadImage = async () => {
     setIsDownloading(true);
     try {
-      // 화면에 보이는 영역 대신, 항상 일정한 비율을 유지하는 '숨겨진 전용 영역'을 캡처합니다.
       const element = document.getElementById('export-capture-area');
       if (element) {
-        // iOS Safari 버그 방지를 위해 두 번 캡처 (첫 번째는 버림)
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-        
-        if (isIOS) {
-          await toPng(element, { cacheBust: true, pixelRatio: 1, backgroundColor: '#e5e7eb', style: { transform: 'none', left: '0', top: '0', position: 'relative' } }).catch(() => {});
-          // 추가 지연시간 부여
-          await new Promise(resolve => setTimeout(resolve, 300));
-        }
-
-        const dataUrl = await toPng(element, {
-          cacheBust: true,
-          pixelRatio: 2, // 고해상도
+        // iOS Safari 대응을 위한 html2canvas 설정
+        const canvas = await html2canvas(element, {
+          useCORS: true,
+          allowTaint: false,
+          scale: 2, // 고해상도
           backgroundColor: '#e5e7eb',
-          style: {
-            // 캡처 시 화면 밖으로 밀어낸 위치(left: -9999px)를 초기화하여 정상적으로 그려지게 함
-            transform: 'none',
-            left: '0',
-            top: '0',
-            position: 'relative',
-          }
+          logging: false,
+          imageTimeout: 15000, // 이미지 로딩 대기 시간
         });
 
+        const dataUrl = canvas.toDataURL('image/png');
         const fileName = `OBJT_북커버_${SIZES[size]?.name || '직접입력'}_${DIARY_TYPES[diaryType].name}.png`;
 
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        
         if (isIOS) {
           try {
             // iOS는 a 태그 download 속성이 잘 작동하지 않으므로 Web Share API 사용
@@ -409,7 +399,15 @@ export default function App() {
         이미지 다운로드 전용 캡처 영역 (사용자 눈에는 보이지 않음)
         패널이 열려있든 닫혀있든 상관없이 무조건 '0.95 비율(확대된 상태)'로 고정되어 예쁘게 저장됩니다.
       */}
-      <div className="fixed top-0 left-0 opacity-[0.01] pointer-events-none z-[-1] overflow-hidden">
+      <div 
+        style={{ 
+          position: 'absolute', 
+          top: 0, 
+          left: '-9999px', 
+          pointerEvents: 'none', 
+          zIndex: -1 
+        }}
+      >
         <div 
           id="export-capture-area" 
           className="w-[420px] h-[600px] bg-[#e5e7eb] relative flex flex-col items-center justify-center font-sans"
