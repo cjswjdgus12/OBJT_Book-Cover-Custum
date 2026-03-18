@@ -4,12 +4,14 @@
  */
 
 import React, { useState } from 'react';
-import { Ruler, Layers, Check, Download, Star, X, Plus } from 'lucide-react';
+import { Ruler, Layers, Check, Download, X, Plus } from 'lucide-react';
 import html2canvas from 'html2canvas';
 
 // 리본 아이콘 (커스텀 SVG)
 const RibbonIcon = ({ size, fill, color, strokeWidth, className }: any) => (
   <svg 
+    xmlns="http://www.w3.org/2000/svg"
+    version="1.1"
     width={size} 
     height={size} 
     viewBox="0 0 24 24" 
@@ -27,10 +29,29 @@ const RibbonIcon = ({ size, fill, color, strokeWidth, className }: any) => (
   </svg>
 );
 
+// 별 아이콘 (커스텀 SVG)
+const StarIcon = ({ size, fill, color, strokeWidth, className }: any) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg"
+    version="1.1"
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill={fill} 
+    stroke={color} 
+    strokeWidth={strokeWidth} 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
+);
+
 // 장식 종류 정의
 const DECORATION_TYPES = {
   ribbon: { name: '리본', icon: RibbonIcon, color: '#ff7eb9' },
-  star: { name: '별', icon: Star, color: '#ffcc00' }
+  star: { name: '별', icon: StarIcon, color: '#ffcc00' }
 };
 
 // 사진과 동일한 느낌을 내는 SVG 패턴 생성 (세로줄만 남김)
@@ -182,8 +203,19 @@ export default function App() {
           allowTaint: false,
           scale: 2, // 고해상도
           backgroundColor: '#e5e7eb',
-          logging: false,
-          imageTimeout: 15000, // 이미지 로딩 대기 시간
+          logging: true, // 디버깅을 위해 로깅 활성화
+          imageTimeout: 15000,
+          onclone: (clonedDoc) => {
+            const clonedElement = clonedDoc.getElementById('export-capture-area');
+            if (clonedElement) {
+              clonedElement.style.position = 'relative';
+              clonedElement.style.left = '0';
+              clonedElement.style.top = '0';
+              clonedElement.style.zIndex = '1000';
+              clonedElement.style.visibility = 'visible';
+              clonedElement.style.display = 'flex';
+            }
+          }
         });
 
         const dataUrl = canvas.toDataURL('image/png');
