@@ -200,14 +200,18 @@ export default function App() {
                 transform: 'translateY(-50%)',
                 width: `${210 * scale}px`,
                 height: `${210 * scale}px`,
-                backgroundImage: 'url("https://i.ibb.co/8nxf6gcx/image.png")',
-                backgroundSize: 'contain',
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right center',
                 zIndex: 10,
-                transition: 'all 0.5s ease-in-out'
+                transition: 'all 0.5s ease-in-out',
+                pointerEvents: 'none'
               }}
-            />
+            >
+              <img 
+                src="https://i.ibb.co/8nxf6gcx/image.png" 
+                alt="strap"
+                style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'right center' }}
+                referrerPolicy="no-referrer"
+              />
+            </div>
           )}
 
           {/* 블림: 고무줄 밴드 및 태그 */}
@@ -441,13 +445,17 @@ export default function App() {
                   transform: 'translateY(-50%)',
                   width: `${210 * 0.95}px`,
                   height: `${210 * 0.95}px`,
-                  backgroundImage: 'url("https://i.ibb.co/8nxf6gcx/image.png")',
-                  backgroundSize: 'contain',
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right center',
-                  zIndex: 10
+                  zIndex: 10,
+                  pointerEvents: 'none'
                 }}
-              />
+              >
+                <img 
+                  src="https://i.ibb.co/8nxf6gcx/image.png" 
+                  alt="strap"
+                  style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'right center' }}
+                  referrerPolicy="no-referrer"
+                />
+              </div>
             )}
 
             {/* 블림: 고무줄 밴드 및 태그 (다운로드용) */}
