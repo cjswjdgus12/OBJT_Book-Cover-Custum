@@ -198,7 +198,7 @@ export default function App() {
     
     console.log('이미지 저장 시작...');
     
-    let originalScrollY = 0;
+    let originalScrollY = window.scrollY;
     
     try {
       const element = document.getElementById('export-capture-area');
@@ -206,55 +206,45 @@ export default function App() {
         throw new Error('캡처 영역을 찾을 수 없습니다.');
       }
 
-      // 캡처 전 잠시 대기 (이미지 로딩 등)
-      originalScrollY = window.scrollY;
+      // 스크롤 위치를 최상단으로 이동 (html2canvas 오프셋 방지)
       window.scrollTo(0, 0);
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      console.log('이미지 프리로딩 중...');
-      const imageUrls = Object.values(DIARY_TYPES).map(t => t.imageUrl);
-      await Promise.all(imageUrls.map(url => {
-        return new Promise((resolve) => {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.onload = () => resolve(true);
-          img.onerror = () => resolve(false);
-          img.src = url;
+      
+      // 이미지 프리로딩 확인
+      const images = element.getElementsByTagName('img');
+      await Promise.all(Array.from(images).map(img => {
+        if (img.complete) return Promise.resolve();
+        return new Promise(resolve => {
+          img.onload = resolve;
+          img.onerror = resolve;
         });
       }));
+
+      // 폰트 및 레이아웃 안정화 대기
+      await new Promise(resolve => setTimeout(resolve, 800));
 
       console.log('html2canvas 실행 중...');
       const canvas = await html2canvas(element, {
         useCORS: true,
         allowTaint: false,
-        scale: 2,
+        scale: 3, // 고해상도 출력
         backgroundColor: '#e5e7eb',
         logging: false,
-        imageTimeout: 20000,
-        scrollX: 0,
-        scrollY: 0,
-        x: 0,
-        y: 0,
-        width: 420,
-        height: 600,
+        imageTimeout: 30000,
         onclone: (clonedDoc) => {
           const clonedElement = clonedDoc.getElementById('export-capture-area');
           if (clonedElement) {
-            // 클론된 문서에서 캡처 영역을 최상단 좌측에 강제 배치
-            clonedElement.style.position = 'absolute';
-            clonedElement.style.left = '0';
-            clonedElement.style.top = '0';
-            clonedElement.style.width = '420px';
-            clonedElement.style.height = '600px';
-            clonedElement.style.boxSizing = 'border-box';
-            clonedElement.style.margin = '0';
-            clonedElement.style.padding = '0';
             clonedElement.style.display = 'block';
             clonedElement.style.visibility = 'visible';
+            clonedElement.style.position = 'relative';
+            clonedElement.style.left = '0';
+            clonedElement.style.top = '0';
+            clonedElement.style.opacity = '1';
             
             // 클론된 문서의 바디 스타일 초기화
             clonedDoc.body.style.margin = '0';
             clonedDoc.body.style.padding = '0';
+            clonedDoc.body.style.width = '420px';
+            clonedDoc.body.style.height = '600px';
             clonedDoc.body.style.overflow = 'hidden';
           }
         }
@@ -662,11 +652,15 @@ export default function App() {
       */}
       <div 
         style={{ 
-          position: 'absolute', 
-          top: '-9999px', 
-          left: '-9999px', 
+          position: 'fixed', 
+          top: 0, 
+          left: 0, 
+          width: '420px',
+          height: '600px',
+          opacity: 0,
           pointerEvents: 'none', 
-          zIndex: -1 
+          zIndex: -100,
+          overflow: 'hidden'
         }}
       >
         <div 
@@ -676,7 +670,8 @@ export default function App() {
             backgroundColor: '#e5e7eb',
             display: 'block',
             overflow: 'hidden',
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
+            position: 'relative'
           }}
         >
           {/* 워터마크 (저장된 이미지 좌측 상단) */}
@@ -684,8 +679,8 @@ export default function App() {
             <h1 className="text-xl font-bold tracking-tighter px-3 py-1 rounded-full"
                 style={{ 
                   color: '#111827', 
-                  backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                  filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.05))'
+                  backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                  border: '1px solid rgba(0,0,0,0.05)'
                 }}>
               OBJT
             </h1>
@@ -721,17 +716,22 @@ export default function App() {
               }}
             />
 
-            {/* 장식들 (다운로드용) */}
+            {/* 장식들 (다운로드용) - 절대 픽셀 좌표 사용 */}
             {decorations.map((deco) => {
               const DecoIcon = DECORATION_TYPES[deco.type].icon;
               const iconSize = 64 * 0.95;
+              const diaryW = rawWidth * 0.95;
+              const diaryH = rawHeight * 0.95;
+              const posX = (diaryW * deco.x / 100) - (iconSize / 2);
+              const posY = (diaryH * deco.y / 100) - (iconSize / 2);
+
               return (
                 <div
                   key={deco.id}
                   className="absolute"
                   style={{
-                    left: `calc(${deco.x}% - ${iconSize / 2}px)`,
-                    top: `calc(${deco.y}% - ${iconSize / 2}px)`,
+                    left: `${posX}px`,
+                    top: `${posY}px`,
                     zIndex: 30,
                   }}
                 >
@@ -796,7 +796,7 @@ export default function App() {
                     height: `${20 * 0.95}px`,
                     backgroundColor: '#F8F9FA',
                     borderRadius: '50%',
-                    boxShadow: '1px 2px 4px rgba(0,0,0,0.1), inset 0 1px 2px rgba(255,255,255,0.8)',
+                    boxShadow: '1px 2px 4px rgba(0,0,0,0.1)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
@@ -805,9 +805,9 @@ export default function App() {
                     transform: 'rotate(0deg)'
                   }}
                 >
-                  <div style={{ width: `${2 * 0.95}px`, height: `${2 * 0.95}px`, borderRadius: '50%', backgroundColor: '#9ca3af', boxShadow: 'inset 0.5px 0.5px 1px rgba(0,0,0,0.3)' }} />
+                  <div style={{ width: `${2 * 0.95}px`, height: `${2 * 0.95}px`, borderRadius: '50%', backgroundColor: '#9ca3af' }} />
                   <span style={{ fontSize: `${7 * 0.95}px`, color: '#888', fontWeight: 'bold', letterSpacing: '1px', fontFamily: 'sans-serif' }}>OBJINT</span>
-                  <div style={{ width: `${2 * 0.95}px`, height: `${2 * 0.95}px`, borderRadius: '50%', backgroundColor: '#9ca3af', boxShadow: 'inset 0.5px 0.5px 1px rgba(0,0,0,0.3)' }} />
+                  <div style={{ width: `${2 * 0.95}px`, height: `${2 * 0.95}px`, borderRadius: '50%', backgroundColor: '#9ca3af' }} />
                 </div>
               </>
             )}
@@ -824,7 +824,7 @@ export default function App() {
             }}
           >
             <div className="px-4 py-2 rounded-full tracking-wide font-medium"
-                 style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)', color: '#ffffff', fontSize: '13px' }}>
+                 style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)', color: '#ffffff', fontSize: '13px' }}>
               {currentRealText} • {DIARY_TYPES[diaryType].name}{getDecorationInfo()}
             </div>
           </div>
