@@ -4,8 +4,14 @@
  */
 
 import React, { useState } from 'react';
-import { Ruler, Layers, Check, Download } from 'lucide-react';
+import { Ruler, Layers, Check, Download, Star, Heart, X, Plus } from 'lucide-react';
 import html2canvas from 'html2canvas';
+
+// 장식 종류 정의
+const DECORATION_TYPES = {
+  ribbon: { name: '리본', icon: Heart, color: '#ff7eb9' },
+  star: { name: '별', icon: Star, color: '#ffcc00' }
+};
 
 // 사진과 동일한 느낌을 내는 SVG 패턴 생성 (세로줄만 남김)
 const SPARKLE_SVG = "data:image/svg+xml,%3Csvg width='120' height='120' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='stripes' width='3' height='3' patternUnits='userSpaceOnUse'%3E%3Crect width='1' height='3' fill='rgba(255,255,255,0.25)'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23stripes)'/%3E%3C/svg%3E";
@@ -64,6 +70,51 @@ export default function App() {
   
   // 이미지 다운로드 진행 상태를 관리하는 State
   const [isDownloading, setIsDownloading] = useState(false);
+
+  // 장식 상태 관리
+  const [decorations, setDecorations] = useState<{ id: number; type: keyof typeof DECORATION_TYPES; x: number; y: number }[]>([]);
+  const [draggingId, setDraggingId] = useState<number | null>(null);
+
+  // 장식 추가 함수
+  const addDecoration = (type: keyof typeof DECORATION_TYPES) => {
+    const newId = Date.now();
+    setDecorations([...decorations, { id: newId, type, x: 50, y: 50 }]);
+  };
+
+  // 장식 삭제 함수
+  const removeDecoration = (id: number) => {
+    setDecorations(decorations.filter(d => d.id !== id));
+  };
+
+  // 드래그 시작
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent, id: number) => {
+    e.stopPropagation();
+    setDraggingId(id);
+  };
+
+  // 드래그 중
+  const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (draggingId === null) return;
+
+    const container = document.getElementById('diary-preview-container');
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+
+    setDecorations(decorations.map(d => 
+      d.id === draggingId ? { ...d, x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) } : d
+    ));
+  };
+
+  // 드래그 종료
+  const handleDragEnd = () => {
+    setDraggingId(null);
+  };
 
   // 화면에 보이는 용도 (패널이 열려있을 때는 작게, 닫혀있을 때는 크게)
   const scale = isPanelOpen ? 0.55 : 0.8; 
@@ -153,7 +204,13 @@ export default function App() {
 
   return (
     // 전체 컨테이너
-    <div className="w-full h-[100dvh] md:max-w-[420px] md:mx-auto bg-gray-50 flex flex-col relative shadow-[0_0_50px_rgba(0,0,0,0.1)] overflow-hidden font-sans">
+    <div 
+      className="w-full h-[100dvh] md:max-w-[420px] md:mx-auto bg-gray-50 flex flex-col relative shadow-[0_0_50px_rgba(0,0,0,0.1)] overflow-hidden font-sans"
+      onMouseMove={handleDragMove}
+      onMouseUp={handleDragEnd}
+      onTouchMove={handleDragMove}
+      onTouchEnd={handleDragEnd}
+    >
       
       {/* 앱 상단 헤더 */}
       <header className="absolute top-0 w-full px-5 py-4 z-20 flex justify-between items-center pointer-events-none">
@@ -168,6 +225,7 @@ export default function App() {
              style={{ backgroundImage: 'radial-gradient(#9ca3af 1px, transparent 1px)', backgroundSize: '16px 16px' }}></div>
 
         <div 
+          id="diary-preview-container"
           className="relative transition-all duration-500 ease-in-out flex items-center justify-center z-10 shrink-0"
           style={{
             width: `${currentWidth}px`,
@@ -182,6 +240,38 @@ export default function App() {
             boxShadow: 'inset 6px 0 12px rgba(0,0,0,0.15), 2px 2px 8px rgba(0,0,0,0.05)' // 책등 그림자 및 전체 그림자
           }}
         >
+          {/* 장식들 */}
+          {decorations.map((deco) => {
+            const DecoIcon = DECORATION_TYPES[deco.type].icon;
+            return (
+              <div
+                key={deco.id}
+                onMouseDown={(e) => handleDragStart(e, deco.id)}
+                onTouchStart={(e) => handleDragStart(e, deco.id)}
+                className="absolute cursor-move group"
+                style={{
+                  left: `${deco.x}%`,
+                  top: `${deco.y}%`,
+                  transform: 'translate(-50%, -50%)',
+                  zIndex: 30,
+                }}
+              >
+                <DecoIcon 
+                  size={32 * scale} 
+                  fill={DECORATION_TYPES[deco.type].color} 
+                  color="white" 
+                  strokeWidth={1.5}
+                  className="drop-shadow-md"
+                />
+                <button
+                  onClick={(e) => { e.stopPropagation(); removeDecoration(deco.id); }}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            );
+          })}
           {/* 스파클: 똑딱이 스트랩 */}
           {diaryType.includes('sparkle') && (
             <div 
@@ -370,6 +460,28 @@ export default function App() {
             </div>
           </section>
 
+          {/* 장식 추가 섹션 */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-2 text-gray-800 font-bold mb-3">
+              <Plus className="w-5 h-5 text-gray-400" />
+              <h3 className="text-lg">장식 추가</h3>
+            </div>
+            <div className="flex gap-3">
+              {Object.entries(DECORATION_TYPES).map(([key, value]) => (
+                <button
+                  key={key}
+                  onClick={() => addDecoration(key as keyof typeof DECORATION_TYPES)}
+                  className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 transition-colors shadow-sm flex-1 justify-center"
+                >
+                  <value.icon size={18} color={value.color} fill={value.color} />
+                  <span className="text-sm font-bold text-gray-700">{value.name}</span>
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] text-gray-400 italic text-center">* 추가된 장식은 미리보기에서 드래그하여 위치를 조절할 수 있습니다.</p>
+          </section>
+
+          <div className="h-8"></div>
         </div>
       </div>
 
@@ -436,7 +548,29 @@ export default function App() {
               boxShadow: 'inset 6px 0 12px rgba(0,0,0,0.15), 2px 2px 8px rgba(0,0,0,0.05)'
             }}
           >
-            {/* 스파클: 똑딱이 스트랩 (다운로드용) */}
+            {/* 장식들 (다운로드용) */}
+            {decorations.map((deco) => {
+              const DecoIcon = DECORATION_TYPES[deco.type].icon;
+              return (
+                <div
+                  key={deco.id}
+                  className="absolute"
+                  style={{
+                    left: `${deco.x}%`,
+                    top: `${deco.y}%`,
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: 30,
+                  }}
+                >
+                  <DecoIcon 
+                    size={32 * 0.95} 
+                    fill={DECORATION_TYPES[deco.type].color} 
+                    color="white" 
+                    strokeWidth={1.5}
+                  />
+                </div>
+              );
+            })}
             {diaryType.includes('sparkle') && (
               <div 
                 style={{
