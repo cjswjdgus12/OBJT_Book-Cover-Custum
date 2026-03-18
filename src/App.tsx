@@ -109,12 +109,21 @@ export default function App() {
   // 드래그 시작
   const handleDragStart = (e: React.MouseEvent | React.TouchEvent, id: number) => {
     e.stopPropagation();
+    // 모바일에서 드래그 시 화면 스크롤 방지
+    if ('touches' in e && e.cancelable) {
+      e.preventDefault();
+    }
     setDraggingId(id);
   };
 
   // 드래그 중
   const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
     if (draggingId === null) return;
+    
+    // 드래그 중일 때 브라우저 기본 동작(스크롤, 리프레시 등) 방지
+    if (e.cancelable) {
+      e.preventDefault();
+    }
 
     const container = document.getElementById('diary-preview-container');
     if (!container) return;
@@ -127,7 +136,7 @@ export default function App() {
     const y = ((clientY - rect.top) / rect.height) * 100;
 
     setDecorations(decorations.map(d => 
-      d.id === draggingId ? { ...d, x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) } : d
+      d.id === draggingId ? { ...d, x: Math.max(-15, Math.min(115, x)), y: Math.max(-15, Math.min(115, y)) } : d
     ));
   };
 
@@ -240,7 +249,8 @@ export default function App() {
   return (
     // 전체 컨테이너
     <div 
-      className="w-full h-[100dvh] md:max-w-[420px] md:mx-auto bg-gray-50 flex flex-col relative shadow-[0_0_50px_rgba(0,0,0,0.1)] overflow-hidden font-sans"
+      className="w-full h-[100dvh] md:max-w-[420px] md:mx-auto bg-gray-50 flex flex-col relative shadow-[0_0_50px_rgba(0,0,0,0.1)] overflow-hidden font-sans overscroll-none"
+      style={{ overscrollBehavior: 'none' }}
       onMouseMove={handleDragMove}
       onMouseUp={handleDragEnd}
       onTouchMove={handleDragMove}
@@ -261,7 +271,7 @@ export default function App() {
 
         <div 
           id="diary-preview-container"
-          className="relative transition-[width,height] duration-500 ease-in-out flex items-center justify-center z-10 shrink-0 overflow-hidden"
+          className="relative transition-[width,height] duration-500 ease-in-out flex items-center justify-center z-10 shrink-0"
           style={{
             width: `${currentWidth}px`,
             height: `${currentHeight}px`,
@@ -292,12 +302,13 @@ export default function App() {
                 key={deco.id}
                 onMouseDown={(e) => handleDragStart(e, deco.id)}
                 onTouchStart={(e) => handleDragStart(e, deco.id)}
-                className="absolute cursor-move group will-change-transform"
+                className="absolute cursor-move group will-change-transform touch-none"
                 style={{
                   left: `${deco.x}%`,
                   top: `${deco.y}%`,
                   transform: 'translate(-50%, -50%)',
                   zIndex: 30,
+                  touchAction: 'none' // 모바일 드래그 최적화
                 }}
               >
                 <DecoIcon 
@@ -582,16 +593,24 @@ export default function App() {
             style={{
               width: `${rawWidth * 0.95}px`, // 무조건 0.95 확대 비율 적용
               height: `${rawHeight * 0.95}px`,
-              backgroundColor: DIARY_TYPES[diaryType].hex,
-              backgroundImage: `url("${DIARY_TYPES[diaryType].imageUrl}")`,
-              backgroundRepeat: 'repeat',
-              backgroundSize: getScaledBgSize(DIARY_TYPES[diaryType].bgSize, 0.95),
               borderRadius: '3px 12px 12px 3px',
-              border: '1px solid rgba(0,0,0,0.08)',
-              borderRight: 'none',
               boxShadow: 'inset 6px 0 12px rgba(0,0,0,0.15), 2px 2px 8px rgba(0,0,0,0.05)'
             }}
           >
+            {/* 원단 텍스처 레이어 (다운로드용) */}
+            <div 
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                backgroundColor: DIARY_TYPES[diaryType].hex,
+                backgroundImage: `url("${DIARY_TYPES[diaryType].imageUrl}")`,
+                backgroundRepeat: 'repeat',
+                backgroundSize: getScaledBgSize(DIARY_TYPES[diaryType].bgSize, 0.95),
+                border: '1px solid rgba(0,0,0,0.08)',
+                borderRight: 'none',
+                borderRadius: 'inherit'
+              }}
+            />
+
             {/* 장식들 (다운로드용) */}
             {decorations.map((deco) => {
               const DecoIcon = DECORATION_TYPES[deco.type].icon;
