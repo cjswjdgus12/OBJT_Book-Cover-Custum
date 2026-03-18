@@ -4,12 +4,32 @@
  */
 
 import React, { useState } from 'react';
-import { Ruler, Layers, Check, Download, Star, Heart, X, Plus } from 'lucide-react';
+import { Ruler, Layers, Check, Download, Star, X, Plus } from 'lucide-react';
 import html2canvas from 'html2canvas';
+
+// 리본 아이콘 (커스텀 SVG)
+const RibbonIcon = ({ size, fill, color, strokeWidth, className }: any) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill={fill} 
+    stroke={color} 
+    strokeWidth={strokeWidth} 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M12 12c0 0-1-4-5-4s-5 2-5 4s2 4 5 4s5-4 5-4Z" />
+    <path d="M12 12c0 0 1-4 5-4s5 2 5 4s-2 4-5 4s-5-4-5-4Z" />
+    <path d="M12 12l-2 6m4-6l2 6" />
+    <circle cx="12" cy="12" r="2" />
+  </svg>
+);
 
 // 장식 종류 정의
 const DECORATION_TYPES = {
-  ribbon: { name: '리본', icon: Heart, color: '#ff7eb9' },
+  ribbon: { name: '리본', icon: RibbonIcon, color: '#ff7eb9' },
   star: { name: '별', icon: Star, color: '#ffcc00' }
 };
 
@@ -126,6 +146,21 @@ export default function App() {
   const currentHeight = rawHeight * scale;
   const currentRealText = size === 'custom' ? `직접 입력 (${customWidth || 0} X ${customHeight || 0}mm)` : `${SIZES[size].name} (${SIZES[size].realText})`;
 
+  // 장식 정보 텍스트 생성
+  const getDecorationInfo = () => {
+    if (decorations.length === 0) return '';
+    const counts = decorations.reduce((acc, curr) => {
+      acc[curr.type] = (acc[curr.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const info = Object.entries(counts)
+      .map(([type, count]) => `${DECORATION_TYPES[type as keyof typeof DECORATION_TYPES].name} ${count}개`)
+      .join(', ');
+    
+    return ` • ${info}`;
+  };
+
   // 미리보기 영역 캡처 및 이미지 다운로드 함수
   const handleDownloadImage = async () => {
     setIsDownloading(true);
@@ -226,20 +261,29 @@ export default function App() {
 
         <div 
           id="diary-preview-container"
-          className="relative transition-all duration-500 ease-in-out flex items-center justify-center z-10 shrink-0"
+          className="relative transition-[width,height] duration-500 ease-in-out flex items-center justify-center z-10 shrink-0 overflow-hidden"
           style={{
             width: `${currentWidth}px`,
             height: `${currentHeight}px`,
-            backgroundColor: DIARY_TYPES[diaryType].hex,
-            backgroundImage: `url("${DIARY_TYPES[diaryType].imageUrl}")`,
-            backgroundRepeat: 'repeat',
-            backgroundSize: getScaledBgSize(DIARY_TYPES[diaryType].bgSize, scale),
             borderRadius: '3px 12px 12px 3px',
-            border: '1px solid rgba(0,0,0,0.08)',
-            borderRight: 'none', // 우측 흰색 속지 느낌 제거
             boxShadow: 'inset 6px 0 12px rgba(0,0,0,0.15), 2px 2px 8px rgba(0,0,0,0.05)' // 책등 그림자 및 전체 그림자
           }}
         >
+          {/* 원단 텍스처 레이어 (배경이 깨지는 현상을 방지하기 위해 분리) */}
+          <div 
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backgroundColor: DIARY_TYPES[diaryType].hex,
+              backgroundImage: `url("${DIARY_TYPES[diaryType].imageUrl}")`,
+              backgroundRepeat: 'repeat',
+              backgroundSize: getScaledBgSize(DIARY_TYPES[diaryType].bgSize, scale),
+              border: '1px solid rgba(0,0,0,0.08)',
+              borderRight: 'none',
+              borderRadius: 'inherit',
+              transition: 'background-size 0.5s ease-in-out, background-color 0.5s ease-in-out'
+            }}
+          />
+
           {/* 장식들 */}
           {decorations.map((deco) => {
             const DecoIcon = DECORATION_TYPES[deco.type].icon;
@@ -248,7 +292,7 @@ export default function App() {
                 key={deco.id}
                 onMouseDown={(e) => handleDragStart(e, deco.id)}
                 onTouchStart={(e) => handleDragStart(e, deco.id)}
-                className="absolute cursor-move group"
+                className="absolute cursor-move group will-change-transform"
                 style={{
                   left: `${deco.x}%`,
                   top: `${deco.y}%`,
@@ -257,7 +301,7 @@ export default function App() {
                 }}
               >
                 <DecoIcon 
-                  size={32 * scale} 
+                  size={64 * scale} 
                   fill={DECORATION_TYPES[deco.type].color} 
                   color="white" 
                   strokeWidth={1.5}
@@ -343,7 +387,7 @@ export default function App() {
         </div>
 
         <div className="absolute bottom-6 bg-black/60 backdrop-blur-sm text-white text-[11px] px-3 py-1.5 rounded-full z-10 tracking-wide font-medium">
-          {currentRealText} • {DIARY_TYPES[diaryType].name}
+          {currentRealText} • {DIARY_TYPES[diaryType].name}{getDecorationInfo()}
         </div>
       </div>
 
@@ -563,7 +607,7 @@ export default function App() {
                   }}
                 >
                   <DecoIcon 
-                    size={32 * 0.95} 
+                    size={64 * 0.95} 
                     fill={DECORATION_TYPES[deco.type].color} 
                     color="white" 
                     strokeWidth={1.5}
@@ -637,7 +681,7 @@ export default function App() {
             )}
           </div>
           <div className="absolute bottom-10 bg-black/60 backdrop-blur-md text-white text-[13px] px-4 py-2 rounded-full z-10 tracking-wide font-medium">
-            {currentRealText} • {DIARY_TYPES[diaryType].name}
+            {currentRealText} • {DIARY_TYPES[diaryType].name}{getDecorationInfo()}
           </div>
         </div>
       </div>
