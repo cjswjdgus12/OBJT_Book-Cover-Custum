@@ -195,7 +195,7 @@ export default function App() {
             <div 
               style={{
                 position: 'absolute',
-                right: -1,
+                right: -25 * scale,
                 top: '50%',
                 transform: 'translateY(-50%)',
                 width: `${210 * scale}px`,
@@ -436,7 +436,7 @@ export default function App() {
               <div 
                 style={{
                   position: 'absolute',
-                  right: -1,
+                  right: -25 * 0.95,
                   top: '50%',
                   transform: 'translateY(-50%)',
                   width: `${210 * 0.95}px`,
