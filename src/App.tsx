@@ -4,8 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Ruler, Layers, Check, Download, X, Plus } from 'lucide-react';
-import html2canvas from 'html2canvas';
+import { Ruler, Layers, Check, X, Plus } from 'lucide-react';
 
 // 리본 아이콘 (커스텀 SVG)
 const RibbonIcon = ({ size, fill, color, strokeWidth, className }: any) => (
@@ -54,29 +53,25 @@ const DECORATION_TYPES = {
   star: { name: '별', icon: StarIcon, color: '#ffcc00' }
 };
 
-// 사진과 동일한 느낌을 내는 SVG 패턴 생성 (세로줄만 남김)
-const SPARKLE_SVG = "data:image/svg+xml,%3Csvg width='120' height='120' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='stripes' width='3' height='3' patternUnits='userSpaceOnUse'%3E%3Crect width='1' height='3' fill='rgba(255,255,255,0.25)'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23stripes)'/%3E%3C/svg%3E";
-const BLIM_SVG = "data:image/svg+xml,%3Csvg width='150' height='150' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='crinkle' width='4' height='24' patternUnits='userSpaceOnUse' patternTransform='rotate(2)'%3E%3Cpath d='M 0 0 Q 1 12 0 24' stroke='rgba(255,255,255,0.8)' stroke-width='1' fill='none'/%3E%3Cpath d='M 1.5 0 Q 0.5 12 1.5 24' stroke='rgba(0,0,0,0.05)' stroke-width='0.5' fill='none'/%3E%3Cpath d='M 2.5 0 Q 3.5 12 2.5 24' stroke='rgba(255,255,255,0.5)' stroke-width='0.5' fill='none'/%3E%3C/pattern%3E%3Cfilter id='stitch'%3E%3CfeDropShadow dx='0.5' dy='1' stdDeviation='0.5' flood-color='rgba(0,0,0,0.15)'/%3E%3C/filter%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23crinkle)'/%3E%3Cg fill='none' filter='url(%23stitch)' stroke='rgba(255,255,255,1)' stroke-width='2' stroke-dasharray='2.5 2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M 40 20 L 48 40 L 70 40 L 52 55 L 60 75 L 40 62 L 20 75 L 28 55 L 10 40 L 32 40 Z' transform='rotate(15 40 47)'/%3E%3Cpath d='M 110 90 L 118 110 L 140 110 L 122 125 L 130 145 L 110 132 L 90 145 L 98 125 L 80 110 L 102 110 Z' transform='rotate(-10 110 117)'/%3E%3Cpath d='M 130 -10 L 138 10 L 160 10 L 142 25 L 150 45 L 130 32 L 110 45 L 118 25 L 100 10 L 122 10 Z' transform='rotate(25 130 17)'/%3E%3Cpath d='M -10 100 L -2 120 L 20 120 L 2 135 L 10 155 L -10 142 L -30 155 L -22 135 L -40 120 L -18 120 Z' transform='rotate(-20 -10 127)'/%3E%3C/g%3E%3C/svg%3E";
-
-// 다이어리 종류 적용 (실제 이미지 URL 추가)
+// 다이어리 종류 적용
 const DIARY_TYPES: Record<string, { name: string; hex: string; imageUrl: string; bgSize: string; bgSizeSmall: string }> = {
   sparkleSky: { 
     name: '스파클 - 하늘', 
-    hex: '#B5CBE8', // 사진과 유사한 톤다운된 하늘색
+    hex: '#B5CBE8',
     imageUrl: 'https://i.ibb.co/FLV92PtM/image.png',
     bgSize: '185px 360px',
     bgSizeSmall: 'cover'
   },
   sparklePink: { 
     name: '스파클 - 분홍', 
-    hex: '#EBBBD0', // 사진과 유사한 차분한 핑크색
+    hex: '#EBBBD0',
     imageUrl: 'https://i.ibb.co/B2nMDRrV/image.png',
     bgSize: '185px 360px',
     bgSizeSmall: 'cover'
   },
   blim: { 
     name: '블림', 
-    hex: '#DCE5F0', // 사진과 동일한 아주 창백하고 은은한 얼음빛 하늘색
+    hex: '#DCE5F0',
     imageUrl: 'https://i.ibb.co/m5Bd83VV/image.jpg',
     bgSize: 'cover',
     bgSizeSmall: 'cover'
@@ -105,46 +100,32 @@ export default function App() {
   const [customWidth, setCustomWidth] = useState<number | ''>(250);
   const [customHeight, setCustomHeight] = useState<number | ''>(180);
   const [diaryType, setDiaryType] = useState<keyof typeof DIARY_TYPES>('sparkleSky');
-  
-  // 패널의 열림/닫힘 상태를 관리하는 State
   const [isPanelOpen, setIsPanelOpen] = useState(true);
-  
-  // 이미지 다운로드 진행 상태를 관리하는 State
-  const [isDownloading, setIsDownloading] = useState(false);
 
   // 장식 상태 관리
   const [decorations, setDecorations] = useState<{ id: number; type: keyof typeof DECORATION_TYPES; x: number; y: number }[]>([]);
   const [draggingId, setDraggingId] = useState<number | null>(null);
 
-  // 장식 추가 함수
   const addDecoration = (type: keyof typeof DECORATION_TYPES) => {
     const newId = Date.now();
     setDecorations([...decorations, { id: newId, type, x: 50, y: 50 }]);
   };
 
-  // 장식 삭제 함수
   const removeDecoration = (id: number) => {
     setDecorations(decorations.filter(d => d.id !== id));
   };
 
-  // 드래그 시작
   const handleDragStart = (e: React.MouseEvent | React.TouchEvent, id: number) => {
     e.stopPropagation();
-    // 모바일에서 드래그 시 화면 스크롤 방지
     if ('touches' in e && e.cancelable) {
       e.preventDefault();
     }
     setDraggingId(id);
   };
 
-  // 드래그 중
   const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
     if (draggingId === null) return;
-    
-    // 드래그 중일 때 브라우저 기본 동작(스크롤, 리프레시 등) 방지
-    if (e.cancelable) {
-      e.preventDefault();
-    }
+    if (e.cancelable) e.preventDefault();
 
     const container = document.getElementById('diary-preview-container');
     if (!container) return;
@@ -161,26 +142,18 @@ export default function App() {
     ));
   };
 
-  // 드래그 종료
   const handleDragEnd = () => {
     setDraggingId(null);
   };
 
-  // 화면에 보이는 용도 (패널이 열려있을 때는 작게, 닫혀있을 때는 크게)
   const scale = isPanelOpen ? 0.55 : 0.8; 
-  
   const rawWidth = size === 'custom' ? ((Number(customWidth) || 200) / 2) * 1.8 : SIZES[size].width;
   const rawHeight = size === 'custom' ? (Number(customHeight) || 150) * 1.8 : SIZES[size].height;
-
-  // 내보내기용 캔버스 크기
-  const EXPORT_CANVAS_W = 420;
-  const EXPORT_CANVAS_H = 600;
 
   const currentWidth = rawWidth * scale;
   const currentHeight = rawHeight * scale;
   const currentRealText = size === 'custom' ? `직접 입력 (${customWidth || 0} X ${customHeight || 0}mm)` : `${SIZES[size].name} (${SIZES[size].realText})`;
 
-  // 장식 정보 텍스트 생성
   const getDecorationInfo = () => {
     if (decorations.length === 0) return '';
     const counts = decorations.reduce((acc, curr) => {
@@ -195,149 +168,7 @@ export default function App() {
     return ` • ${info}`;
   };
 
-  // 미리보기 영역 캡처 및 이미지 다운로드 함수
-  const handleDownloadImage = async () => {
-    if (isDownloading) return;
-    setIsDownloading(true);
-    
-    console.log('이미지 저장 시작...');
-    
-    const originalScrollY = window.scrollY;
-    
-    try {
-      const element = document.getElementById('export-capture-area');
-      if (!element) {
-        throw new Error('캡처 영역을 찾을 수 없습니다.');
-      }
-
-      // 스크롤 위치를 최상단으로 이동 (html2canvas 오프셋 방지)
-      window.scrollTo(0, 0);
-      
-      // 이미지 프리로딩 확인
-      const images = element.getElementsByTagName('img');
-      await Promise.all(Array.from(images).map(img => {
-        if (img.complete) return Promise.resolve();
-        return new Promise(resolve => {
-          img.onload = resolve;
-          img.onerror = resolve;
-        });
-      }));
-
-      // 폰트 및 레이아웃 안정화 대기
-      await new Promise(resolve => setTimeout(resolve, 1200));
-
-      console.log('html2canvas 실행 중...');
-      const canvas = await html2canvas(element, {
-        useCORS: true,
-        allowTaint: false,
-        scale: 2,
-        backgroundColor: '#e5e7eb',
-        logging: false,
-        imageTimeout: 30000,
-        width: EXPORT_CANVAS_W,
-        height: EXPORT_CANVAS_H,
-        onclone: (clonedDoc) => {
-          const clonedElement = clonedDoc.getElementById('export-capture-area');
-          if (clonedElement) {
-            clonedElement.style.display = 'block';
-            clonedElement.style.visibility = 'visible';
-            clonedElement.style.position = 'absolute';
-            clonedElement.style.left = '0';
-            clonedElement.style.top = '0';
-            clonedElement.style.opacity = '1';
-            
-            clonedDoc.body.style.margin = '0';
-            clonedDoc.body.style.padding = '0';
-            clonedDoc.body.style.width = `${EXPORT_CANVAS_W}px`;
-            clonedDoc.body.style.height = `${EXPORT_CANVAS_H}px`;
-            clonedDoc.body.style.overflow = 'hidden';
-            clonedDoc.body.style.backgroundColor = '#e5e7eb';
-          }
-        }
-      });
-
-      console.log('캔버스 생성 완료, 데이터 변환 중...');
-      const fileName = `OBJT_북커버_${SIZES[size]?.name || '직접입력'}_${DIARY_TYPES[diaryType].name}.png`;
-
-      // toBlob 사용 (대용량 이미지 대응)
-      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
-      if (!blob) throw new Error('이미지 생성 실패');
-      
-      const dataUrl = canvas.toDataURL('image/png'); // iOS fallback용
-
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-      
-      // 스크롤 위치 복구
-      window.scrollTo(0, originalScrollY);
-
-      if (isIOS) {
-        console.log('iOS 환경 감지, 공유 API 시도...');
-        try {
-          const file = new File([blob], fileName, { type: 'image/png' });
-
-          if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              files: [file],
-              title: 'OBJT 북커버',
-            });
-            console.log('공유 성공');
-          } else {
-            throw new Error('Share API 미지원');
-          }
-        } catch (shareError) {
-          console.log('공유 실패 또는 미지원, 새 창 열기 시도:', shareError);
-          const newWindow = window.open();
-          if (newWindow) {
-            newWindow.document.write(`
-              <html>
-                <head>
-                  <title>이미지 저장</title>
-                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                  <style>
-                    body { margin:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#f3f4f6; height:100vh; font-family:sans-serif; }
-                    .container { text-align:center; padding:20px; }
-                    img { max-width:90%; max-height:70vh; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.1); margin-bottom:20px; }
-                    p { color:#374151; font-weight:bold; }
-                  </style>
-                </head>
-                <body>
-                  <div class="container">
-                    <p>이미지를 길게 눌러 '사진 앱에 저장'을 선택해주세요.</p>
-                    <img src="${dataUrl}" />
-                    <button onclick="window.close()" style="padding:10px 20px; background:#111827; color:white; border:none; border-radius:8px; font-weight:bold;">닫기</button>
-                  </div>
-                </body>
-              </html>
-            `);
-            newWindow.document.close();
-          } else {
-            alert('팝업 차단을 해제하고 다시 시도해주세요.');
-          }
-        }
-      } else {
-        console.log('일반 환경, 다운로드 링크 생성...');
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = fileName;
-        link.href = url;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        console.log('다운로드 완료');
-      }
-    } catch (error) {
-      console.error('이미지 저장 중 오류 발생:', error);
-      // 에러 발생 시에도 스크롤 복구 시도
-      window.scrollTo(0, originalScrollY);
-      alert(`저장 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}\n다시 시도해 주세요.`);
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
   return (
-    // 전체 컨테이너
     <div 
       className="w-full h-[100dvh] md:max-w-[420px] md:mx-auto bg-gray-50 flex flex-col relative shadow-[0_0_50px_rgba(0,0,0,0.1)] overflow-hidden font-sans overscroll-none"
       style={{ overscrollBehavior: 'none' }}
@@ -346,15 +177,12 @@ export default function App() {
       onTouchMove={handleDragMove}
       onTouchEnd={handleDragEnd}
     >
-      
-      {/* 앱 상단 헤더 */}
       <header className="absolute top-0 w-full px-5 py-4 z-20 flex justify-between items-center pointer-events-none">
         <h1 className="text-xl font-bold text-gray-900 tracking-tighter drop-shadow-sm bg-white/50 px-3 py-1 rounded-full backdrop-blur-md">
           OBJT
         </h1>
       </header>
 
-      {/* 상단: 화면용 실시간 미리보기 영역 (패널에 따라 크기 변함) */}
       <div className="w-full bg-[#e5e7eb] relative flex flex-col items-center justify-center pt-8 overflow-hidden transition-all duration-500 flex-1">
         <div className="absolute inset-0 opacity-20 pointer-events-none" 
              style={{ backgroundImage: 'radial-gradient(#9ca3af 1px, transparent 1px)', backgroundSize: '16px 16px' }}></div>
@@ -366,10 +194,9 @@ export default function App() {
             width: `${currentWidth}px`,
             height: `${currentHeight}px`,
             borderRadius: '3px 12px 12px 3px',
-            boxShadow: 'inset 6px 0 12px rgba(0,0,0,0.15), 2px 2px 8px rgba(0,0,0,0.05)' // 책등 그림자 및 전체 그림자
+            boxShadow: 'inset 6px 0 12px rgba(0,0,0,0.15), 2px 2px 8px rgba(0,0,0,0.05)'
           }}
         >
-          {/* 원단 텍스처 레이어 (배경이 깨지는 현상을 방지하기 위해 분리) */}
           <div 
             className="absolute inset-0 pointer-events-none"
             style={{
@@ -384,7 +211,6 @@ export default function App() {
             }}
           />
 
-          {/* 장식들 */}
           {decorations.map((deco) => {
             const DecoIcon = DECORATION_TYPES[deco.type].icon;
             return (
@@ -398,7 +224,7 @@ export default function App() {
                   top: `${deco.y}%`,
                   transform: 'translate(-50%, -50%)',
                   zIndex: 30,
-                  touchAction: 'none' // 모바일 드래그 최적화
+                  touchAction: 'none'
                 }}
               >
                 <DecoIcon 
@@ -417,7 +243,7 @@ export default function App() {
               </div>
             );
           })}
-          {/* 스파클: 똑딱이 스트랩 */}
+
           {diaryType.includes('sparkle') && (
             <div 
               style={{
@@ -442,10 +268,8 @@ export default function App() {
             </div>
           )}
 
-          {/* 블림: 고무줄 밴드 및 태그 */}
           {diaryType === 'blim' && (
             <>
-              {/* 고무줄 밴드 */}
               <div 
                 style={{
                   position: 'absolute',
@@ -459,7 +283,6 @@ export default function App() {
                   transition: 'all 0.5s ease-in-out'
                 }}
               />
-              {/* 하단 흰색 타원형 태그 */}
               <div
                 style={{
                   position: 'absolute',
@@ -475,7 +298,6 @@ export default function App() {
                   justifyContent: 'space-between',
                   padding: `0 ${6 * scale}px`,
                   zIndex: 6,
-                  transform: 'rotate(0deg)',
                   transition: 'all 0.5s ease-in-out'
                 }}
               >
@@ -492,7 +314,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* 하단: 커스텀 패널 */}
       <div 
         className={`bg-white rounded-t-[32px] -mt-6 shadow-[0_-10px_30px_rgba(0,0,0,0.08)] relative z-10 flex flex-col transition-all duration-500 ease-in-out ${isPanelOpen ? 'h-[55vh]' : 'h-[40px] overflow-hidden'}`}
       >
@@ -605,7 +426,6 @@ export default function App() {
             </div>
           </section>
 
-          {/* 장식 추가 섹션 */}
           <section className="space-y-4">
             <div className="flex items-center gap-2 text-gray-800 font-bold mb-3">
               <Plus className="w-5 h-5 text-gray-400" />
@@ -629,238 +449,6 @@ export default function App() {
           <div className="h-8"></div>
         </div>
       </div>
-
-      {/* 모바일 하단 고정 이미지 저장 버튼 */}
-      <div className="w-full bg-white border-t border-gray-100 p-4 pb-8 z-30 shadow-[0_-2px_10px_rgba(0,0,0,0.02)] shrink-0">
-        <button 
-          onClick={handleDownloadImage}
-          disabled={isDownloading}
-          className={`w-full flex justify-center items-center gap-2 text-white font-bold py-4 px-6 rounded-2xl shadow-md transition-all text-[15px]
-            ${isDownloading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-900 hover:bg-black active:scale-[0.98]'}`}
-        >
-          {isDownloading ? (
-            <>
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              <span>저장 중...</span>
-            </>
-          ) : (
-            <>
-              <Download className="w-5 h-5" />
-              <span>이미지 저장하기</span>
-            </>
-          )}
-        </button>
-      </div>
-
-      {/* ★ 추가된 부분 ★ 
-        이미지 다운로드 전용 캡처 영역 (사용자 눈에는 보이지 않음)
-        미리보기와 동일한 비율과 배치를 보장하기 위해 모든 스타일을 인라인으로 정의합니다.
-      */}
-      <div 
-        style={{ 
-          position: 'absolute', 
-          top: '0', 
-          left: '-9999px', 
-          width: '420px',
-          height: '600px',
-          opacity: 1,
-          pointerEvents: 'none', 
-          zIndex: -100,
-          overflow: 'hidden',
-          backgroundColor: '#e5e7eb'
-        }}
-      >
-        <div 
-          id="export-capture-area" 
-          style={{ 
-            width: '420px',
-            height: '600px',
-            backgroundColor: '#e5e7eb',
-            overflow: 'hidden',
-            boxSizing: 'border-box',
-            position: 'relative',
-            fontFamily: 'sans-serif'
-          }}
-        >
-          {/* 배경 도트 패턴 */}
-          <div style={{ 
-            position: 'absolute',
-            inset: 0,
-            opacity: 0.2,
-            backgroundImage: 'radial-gradient(#9ca3af 1px, transparent 1px)', 
-            backgroundSize: '16px 16px' 
-          }}></div>
-
-          {/* 워터마크 (저장된 이미지 좌측 상단) */}
-          <div style={{ position: 'absolute', top: '24px', left: '24px', zIndex: 50 }}>
-            <div style={{ 
-                  fontSize: '14px',
-                  fontWeight: 'bold',
-                  letterSpacing: '-0.05em',
-                  padding: '4px 12px',
-                  borderRadius: '9999px',
-                  color: '#111827', 
-                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                }}>
-              OBJT
-            </div>
-          </div>
-          
-          {/* 다이어리 본체 (0.8 스케일로 고정하여 미리보기의 '큰 상태'와 완벽 동기화) */}
-          <div 
-            style={{
-              position: 'absolute',
-              width: `${rawWidth * 0.8}px`,
-              height: `${rawHeight * 0.8}px`,
-              left: `${(420 - rawWidth * 0.8) / 2}px`,
-              top: `${(600 - rawHeight * 0.8) / 2}px`,
-              borderRadius: '3px 12px 12px 3px',
-              boxShadow: 'inset 6px 0 12px rgba(0,0,0,0.15), 2px 2px 8px rgba(0,0,0,0.05)',
-              zIndex: 10,
-              overflow: 'visible' // 똑딱이가 튀어나와야 하므로 visible 필수
-            }}
-          >
-            {/* 원단 텍스처 레이어 */}
-            <div 
-              style={{
-                position: 'absolute',
-                inset: 0,
-                backgroundColor: DIARY_TYPES[diaryType].hex,
-                backgroundImage: `url("${DIARY_TYPES[diaryType].imageUrl}")`,
-                backgroundRepeat: 'repeat',
-                backgroundSize: getScaledBgSize(DIARY_TYPES[diaryType].bgSize, 0.8),
-                border: '1px solid rgba(0,0,0,0.08)',
-                borderRight: 'none',
-                borderRadius: 'inherit',
-                zIndex: 1
-              }}
-            />
-
-            {/* 장식들 */}
-            {decorations.map((deco) => {
-              const DecoIcon = DECORATION_TYPES[deco.type].icon;
-              const iconSize = 64 * 0.8;
-              return (
-                <div
-                  key={deco.id}
-                  style={{
-                    position: 'absolute',
-                    left: `${deco.x}%`,
-                    top: `${deco.y}%`,
-                    transform: 'translate(-50%, -50%)',
-                    zIndex: 30,
-                    width: `${iconSize}px`,
-                    height: `${iconSize}px`
-                  }}
-                >
-                  <DecoIcon 
-                    size={iconSize} 
-                    fill={DECORATION_TYPES[deco.type].color} 
-                    color="white" 
-                    strokeWidth={1.5}
-                  />
-                </div>
-              );
-            })}
-
-            {/* 스파클: 똑딱이 스트랩 (미리보기와 동일한 로직 적용) */}
-            {diaryType.includes('sparkle') && (
-              <div 
-                style={{
-                  position: 'absolute',
-                  right: `${-25 * 0.8}px`,
-                  top: '50%',
-                  marginTop: `${-(210 * 0.8) / 2}px`,
-                  width: `${210 * 0.8}px`,
-                  height: `${210 * 0.8}px`,
-                  zIndex: 10,
-                  pointerEvents: 'none'
-                }}
-              >
-                <img 
-                  src="https://i.ibb.co/8nxf6gcx/image.png" 
-                  alt="strap"
-                  style={{ 
-                    width: '100%', 
-                    height: '100%', 
-                    objectFit: 'contain', 
-                    objectPosition: 'right center',
-                    display: 'block' 
-                  }}
-                  referrerPolicy="no-referrer"
-                  crossOrigin="anonymous"
-                />
-              </div>
-            )}
-
-            {/* 블림: 고무줄 밴드 및 태그 */}
-            {diaryType === 'blim' && (
-              <>
-                <div 
-                  style={{
-                    position: 'absolute',
-                    right: `${20 * 0.8}px`,
-                    top: 0,
-                    bottom: 0,
-                    width: `${12 * 0.8}px`,
-                    backgroundColor: 'rgba(255, 255, 255, 0.4)',
-                    boxShadow: 'inset 2px 0 4px rgba(0,0,0,0.05), inset -2px 0 4px rgba(0,0,0,0.05), 2px 0 4px rgba(0,0,0,0.1), -2px 0 4px rgba(0,0,0,0.1)',
-                    zIndex: 5
-                  }}
-                />
-                <div
-                  style={{
-                    position: 'absolute',
-                    right: `${25 * 0.8}px`,
-                    bottom: `${25 * 0.8}px`,
-                    width: `${55 * 0.8}px`,
-                    height: `${20 * 0.8}px`,
-                    backgroundColor: '#F8F9FA',
-                    borderRadius: '50%',
-                    boxShadow: '1px 2px 4px rgba(0,0,0,0.1)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: `0 ${6 * 0.8}px`,
-                    zIndex: 6
-                  }}
-                >
-                  <div style={{ width: `${2 * 0.8}px`, height: `${2 * 0.8}px`, borderRadius: '50%', backgroundColor: '#9ca3af' }} />
-                  <span style={{ fontSize: `${7 * 0.8}px`, color: '#888', fontWeight: 'bold', letterSpacing: '1px', fontFamily: 'sans-serif' }}>OBJINT</span>
-                  <div style={{ width: `${2 * 0.8}px`, height: `${2 * 0.8}px`, borderRadius: '50%', backgroundColor: '#9ca3af' }} />
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* 하단 정보 캡션 */}
-          <div 
-            style={{ 
-              position: 'absolute', 
-              bottom: '40px', 
-              left: '0', 
-              width: '420px',
-              display: 'flex', 
-              justifyContent: 'center', 
-              zIndex: 50 
-            }}
-          >
-            <div style={{ 
-                  padding: '8px 16px',
-                  borderRadius: '9999px',
-                  backgroundColor: 'rgba(0, 0, 0, 0.8)', 
-                  color: '#ffffff', 
-                  fontSize: '13px',
-                  fontWeight: '500',
-                  letterSpacing: '0.025em'
-                }}>
-              {currentRealText} • {DIARY_TYPES[diaryType].name}{getDecorationInfo()}
-            </div>
-          </div>
-        </div>
-      </div>
-
     </div>
   );
 }
